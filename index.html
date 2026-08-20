@@ -893,45 +893,69 @@
         }
 
         async function testWorker() {
-            log('info', 'Testing Worker connection...');
-            const proxyUrl = document.getElementById('proxyUrl').value.trim();
-            if (!proxyUrl) {
-                log('error', 'Proxy URL is empty');
-                document.getElementById('workerStatus').innerText = '🔴 Worker: No URL';
-                return;
-            }
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                const resp = await fetch(proxyUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        url: 'https://httpbin.org/get',
-                        method: 'GET',
-                        headers: {},
-                        body: null
-                    }),
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                const status = resp.status;
-                const text = await resp.text();
-                log('debug', `Worker response status: ${status}`);
-                if (status === 200) {
-                    log('success', 'Worker is online.');
-                    log('debug', `Response preview: ${text.slice(0, 200)}`);
-                    document.getElementById('workerStatus').innerText = '🟢 Worker: Online';
-                } else {
-                    log('error', `Worker returned status ${status}: ${text.slice(0, 200)}`);
-                    document.getElementById('workerStatus').innerText = '🔴 Worker: Offline';
-                }
-            } catch (e) {
-                log('error', `Failed to connect to Worker: ${e.name} - ${e.message}`);
-                log('warning', 'Check if the Worker URL is correct and CORS is enabled.');
-                document.getElementById('workerStatus').innerText = '🔴 Worker: Offline';
-            }
+    const proxyUrl = document.getElementById('proxyUrl').value.trim();
+    if (!proxyUrl) {
+        log('error', 'Proxy URL is empty');
+        document.getElementById('workerStatus').innerText = '🔴 Worker: No URL';
+        return;
+    }
+
+    // مرحله ۱: GET ساده به Worker
+    log('info', 'Step 1: Testing direct GET to Worker...');
+    try {
+        const controller1 = new AbortController();
+        const timeout1 = setTimeout(() => controller1.abort(), 10000);
+        const resp1 = await fetch(proxyUrl, { signal: controller1.signal });
+        clearTimeout(timeout1);
+        const text1 = await resp1.text();
+        log('debug', `GET response status: ${resp1.status}`);
+        log('debug', `GET response text: ${text1.slice(0, 200)}`);
+        if (resp1.status === 200) {
+            log('success', 'Worker is reachable via GET.');
+        } else {
+            log('warning', `GET returned status ${resp1.status}`);
         }
+    } catch (e) {
+        log('error', `GET to Worker failed: ${e.name} - ${e.message}`);
+        log('warning', 'Worker may be down or URL is incorrect.');
+        document.getElementById('workerStatus').innerText = '🔴 Worker: Offline (GET)';
+        return;
+    }
+
+    // مرحله ۲: POST با آدرس سبک
+    log('info', 'Step 2: Testing POST proxy with example.com...');
+    try {
+        const controller2 = new AbortController();
+        const timeout2 = setTimeout(() => controller2.abort(), 20000); // 20s
+        const resp2 = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: 'https://example.com',
+                method: 'GET',
+                headers: {},
+                body: null
+            }),
+            signal: controller2.signal
+        });
+        clearTimeout(timeout2);
+        const status2 = resp2.status;
+        const text2 = await resp2.text();
+        log('debug', `POST response status: ${status2}`);
+        if (status2 === 200) {
+            log('success', 'Worker proxy works correctly.');
+            log('debug', `Response preview: ${text2.slice(0, 200)}`);
+            document.getElementById('workerStatus').innerText = '🟢 Worker: Online';
+        } else {
+            log('warning', `POST returned status ${status2}: ${text2.slice(0, 200)}`);
+            document.getElementById('workerStatus').innerText = '🟡 Worker: Online but proxy error';
+        }
+    } catch (e) {
+        log('error', `POST to Worker failed: ${e.name} - ${e.message}`);
+        log('warning', 'Check Worker code, CORS, and network.');
+        document.getElementById('workerStatus').innerText = '🔴 Worker: Offline (POST)';
+    }
+}
 
         function stopAttack() { stopFlag = true; log('info', 'Stop requested.'); document.getElementById('stopBtn').disabled = true; }
         function resetAll() {
